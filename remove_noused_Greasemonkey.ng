@@ -1,0 +1,92 @@
+// ==NILScript==
+// @name remove_noused_Greasemonkey
+// @namespace http://efcl.info/
+// @description 無効になっているGreasemonkeyスクリプトを移動する。
+// @author azu
+// @homepage http://efcl.info/
+// @twitter https://twitter.com/azu_re
+// ==/NILScript==
+/*
+ saveDirPath にバックアップ先にするディレクトリのパスを入れる("C:\\path\\to\\dir\\ のように)
+ gm_scriptsフォルダで内で実行
+ */
+/* config */
+var saveDirPath = "C:\\Users\\azu\\Web\\Greasemonkey\\";// 移動先のディレクトリパス
+/* config */
+
+var LooseXML = require('LooseXML').HTML;
+// config.xmlをパースする
+var html = new LooseXML(Main.scriptDirectory.file("config.xml"), {
+    //    ignoreCase :false,
+    //    ignoreWhitespaces :false
+    // 空要素がおかしくなる
+});
+var scripts = html.getElementsByTagName("Script");
+var scriptsObj = getScriptsList(scripts) || null;
+var unableScriptsPathList = getUableScriptsPathList(scriptsObj.uneable) || null;
+if (scriptsObj && unableScriptsPathList) {
+    // ファイルを移動
+    moveToScript(unableScriptsPathList, saveDirPath);
+    // configの書き換え
+    createConfing(scriptsObj.enable);
+}
+// config.xmlを上書き
+function createConfing(script) {
+    var fileNmae = "config.xml";
+    var path = Main.scriptDirectory + '\\' + fileNmae;
+    var file = (new File(path));
+    var content = "<UserScriptConfig>\n\t"
+            + script.join("\n\t") + "\n"
+            + "</UserScriptConfig>"
+    file.update(content.replace(/(<\/?)(script)/g, "$1Script"), "UTF-8")
+}
+// バックアップフォルダへ移動
+function moveToScript(scripts, dir) {
+    if (dir) {
+        dir = (dir[dir.length - 1] == "\\") ? dir : dir + "\\";//ディレクトリにする
+    } else {
+        return;
+    }
+    dir = new Directory(dir);
+    // config.xmlを移動
+    Main.scriptDirectory.file("config.xml").move(dir);
+    for (var i = 0 ,l = scripts.length; i < l; i++) {
+        var script = Main.scriptDirectory.file(scripts[i]);
+        if (script.exists) {
+            println(script);
+            script.move(dir);
+        }
+    }
+}
+// パスリストにして返す
+// スクリプトディレクトリがあるならそのディレクトリパスを格納する
+// ファイルだけの場合はファイルのパスを格納 - 昔の仕様?
+function getUableScriptsPathList(scripts) {
+    var pathList = [];
+    for (var i = 0 ,l = scripts.length; i < l; i++) {
+        var script = scripts[i];
+        if (script.get("basedir") === ".") {
+            pathList[i] = script.get("basedir") + "\\" + script.get("filename");
+        } else {
+            pathList[i] = script.get("basedir") + "\\";
+        }
+        //        println(pathList[i]);
+    }
+    return pathList;
+}
+// 有効、無効を分別したオブジェクトを返す
+function getScriptsList(scripts) {
+    var ableScriptsList = [];
+    var unableScriptsList = [];
+    for (var script in scripts) {// ジェネレーターなので
+        if (script.get("enabled") == "false") {
+            unableScriptsList.push(script);
+        } else {
+            ableScriptsList.push(script);
+        }
+    }
+    return {
+        enable : ableScriptsList,
+        uneable : unableScriptsList
+    };
+}
