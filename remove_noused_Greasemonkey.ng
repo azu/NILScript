@@ -29,6 +29,10 @@ if (scriptsObj && unableScriptsPathList) {
     moveToScript(unableScriptsPathList, saveDirPath);
     // configの書き換え
     createConfing(scriptsObj.enable);
+    // 終了表示
+    alert("無効になっているスクリプト "
+            + scriptsObj.uneable.length + "/" + (scriptsObj.uneable.length + scriptsObj.enable.length)
+            + "を移動しました");
 }
 // config.xmlを上書き
 function createConfing(script) {
@@ -48,6 +52,9 @@ function moveToScript(scripts, dir) {
         return;
     }
     dir = new Directory(dir);
+    if (!dir.exists) {
+        dir = dir.create();
+    }
     // config.xmlを移動
     Main.scriptDirectory.file("config.xml").move(dir);
     for (var i = 0 ,l = scripts.length; i < l; i++) {
