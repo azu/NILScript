@@ -1,0 +1,30 @@
+// ==NILScript==
+// @name NILtranslator
+// @namespace http://efcl.info/
+// @description コピーしたテキストを翻訳表示する
+// @author azu
+// @homepage http://efcl.info/
+// @twitter https://twitter.com/azu_re
+// ==/NILScript==
+// タスクバーアイコン
+Main.createNotifyIcon();
+//安定性向上のため推奨
+Main.process.priority=Process.priority.high;
+var Clipboard = require('Clipboard').Clipboard;
+var Hotstrokes = require('Hotstrokes').Hotstrokes;
+var Mouse = require('Mouse').Mouse;
+var Display = require('Window').Display;
+var http = new require("HTTP").HTTP();
+use('Window', 'ATL', 'HTTPD');
+// MVC的に作りたい
+/*
+http://www.diffshare.com/blog/archives/1625
+controll - 操作する,Command
+model - 外部APIをたたいてデータの取得、変更の通知,ValueObject
+view - 結果の表示、ローカルサーバ,Mediator
+C→M→V
+UI→Mediator(V)→{M or C}
+C(データの取得依頼)→M→外部データ取得→C→M→V
+ */
+var controll = {}, model = {}, view = {};
+
