@@ -30,18 +30,18 @@ var controll = {}, model = {}, view = {};
 
 /*model*/
 model.init = function() {
-	var max = 10;
-	var hist = [Clipboard.text];
-	Clipboard.observe('change', function(obj) {
-		if (this.hasFormat('text')) {
-			var text = this.text;
-			if (text && (hist.indexOf(text) == -1)) {
-				hist.unshift(text);
-				hist = hist.slice(0, max);
-				view.translateText(text);
-			}
-		}
-	});
+    var max = 10;
+    var hist = [Clipboard.text];
+    Clipboard.observe('change', function(obj) {
+        if (this.hasFormat('text')) {
+            var text = this.text;
+            if (text && (hist.indexOf(text) == -1)) {
+                hist.unshift(text);
+                hist = hist.slice(0, max);
+                view.translateText(text);
+            }
+        }
+    });
 }
 /**
  * http://www.excite.co.jp/world/english/ で英日翻訳
@@ -49,34 +49,34 @@ model.init = function() {
  * @param callback
  */
 model.getExcite = function(str, callback) {
-	var API = "http://www.excite.co.jp/world/english/"
-	var searchRegexp = model.getExcite.regexp || (model.getExcite.regexp = /id="after">([^<]*?)</m);
-	var xhr = http.request({
-		method: "post",
-		url: API,
-		headers: {
-			'User-agent': 'Mozilla/5.0 (compatible)',
-			'Content-Type': 'application/x-www-form-urlencoded',
-			'Accept': 'application/atom+xml,application/xml,text/xml'
-		},
-		body: "before=" + str.replace(/\s/g, "+") + "&wb_lp=ENJA",
-		events: {
-			response: function() {
-				var res = this.response;
-				if (res.status == 200) {
-					var input = res.readText();
-					if (searchRegexp.test(input)) {
-						var match = input.match(searchRegexp);
-						callback((match && match[1]) || false);
-					} else {
-						alert("No matches found!");
-					}
-				} else {
-					// callback(res.statusText);
-				}
-			}
-		}
-	}).send();
+    var API = "http://www.excite.co.jp/world/english/"
+    var searchRegexp = model.getExcite.regexp || (model.getExcite.regexp = /id="after">([^<]*?)</m);
+    var xhr = http.request({
+        method: "post",
+        url: API,
+        headers: {
+            'User-agent': 'Mozilla/5.0 (compatible)',
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'Accept': 'application/atom+xml,application/xml,text/xml'
+        },
+        body: "before=" + str.replace(/\s/g, "+") + "&wb_lp=ENJA",
+        events: {
+            response: function() {
+                var res = this.response;
+                if (res.status == 200) {
+                    var input = res.readText();
+                    if (searchRegexp.test(input)) {
+                        var match = input.match(searchRegexp);
+                        callback((match && match[1]) || false);
+                    } else {
+                        alert("No matches found!");
+                    }
+                } else {
+                    // callback(res.statusText);
+                }
+            }
+        }
+    }).send();
 }
 /**
  * http://www.alc.co.jp/ で翻訳
@@ -84,188 +84,188 @@ model.getExcite = function(str, callback) {
  * @param callback
  */
 model.getALC = function (word, callback) {
-	var API = "http://eow.alc.co.jp/eow/sp/" + word + "/UTF-8/";
-	var xhr = http.request({
-		method: "get",
-		url: API,
-		events: {
-			response: function() {
-				var res = this.response;
-				if (res.status == 200) {
-					var resTxt = res.readText();
-					callback(resTxt);
-				} else {
-					//callback(res.statusText);
-				}
-			}
-		}
-	}).send();
+    var API = "http://eow.alc.co.jp/eow/sp/" + word + "/UTF-8/";
+    var xhr = http.request({
+        method: "get",
+        url: API,
+        events: {
+            response: function() {
+                var res = this.response;
+                if (res.status == 200) {
+                    var resTxt = res.readText();
+                    callback(resTxt);
+                } else {
+                    //callback(res.statusText);
+                }
+            }
+        }
+    }).send();
 }
 /*view*/
 view.popup = {
-	window: (function() {
-		var win = Window.create({
-			title: 'IE test',
-			width: Display.width * 0.8,
-			height: 100,
-			top: Display.height - 100,
-			left: Display.width * 0.2,
-			children: {
-				ie: {
-					type: Trident,
-					top: 0,
-					left: 0,
-					right: 0,
-					bottom: 0,
-					events: {
-						activate: function(evt) {
-							println("test-")
-							if (view.popup.timer && view.popup.timer.running) view.popup.timer.stop();
-						},
-						unfocus: function(evt) {
-							view.popup.timer = new Timer((function() {
-								view.popup.window.hide();
-							}), 5 * 1000, true);
-							view.popup.timer.run();
-						}
-					}
-				}
-			}
-		});
-		win.observe("activate", function(evt) {
-			if (view.popup.timer && view.popup.timer.running) view.popup.timer.stop();
-		});
-		win.observe("deactivate", function(evt) {
-			view.popup.hideWindow();
-		});
-		return win;
-	})(),
-	timer: null,
-	hideWindow: function(msec) {
-		view.popup.timer = new Timer((function() {
-			view.popup.window.hide();
-		}), 5 * 1000, true);
-		view.popup.timer.run();
-	},
-	showWindow: function() {
-		if (view.popup.timer && view.popup.timer.running) {
-			view.popup.timer.stop();
-		}
-		var win = view.popup.getWindow();
-		if (win) {
-			//win.moveTo(x + 30, y + 30);
-			win.show()
-			return win;
-		}
-	},
-	getWindow: function() {
-		if (view.popup.window && view.popup.window.exists) {
-			return view.popup.window;
-		}
-		try {
-			view.popup.window = Window.create({
-				title: '翻訳パネル',
-				width: Display.width * 0.8,
-				height: 100,
-				top: Display.height - 100,
-				left: Display.width * 0.2,
-				children: {
-					ie: {
-						type: Trident,
-						top: 0,
-						left: 0,
-						right: 0,
-						bottom: 0,
-						events: {
-							activate: function(evt) {
-								if (view.popup.timer && view.popup.timer.running) view.popup.timer.stop();
-							},
-							unfocus: function(evt) {
-								view.popup.timer = new Timer((function() {
-									view.popup.window.hide();
-								}), 5 * 1000, true);
-								view.popup.timer.run();
-							}
-						}
-					}
-				}
-			});
-			view.popup.window.observe("activate", function(evt) {
-				if (view.popup.timer && view.popup.timer.running) view.popup.timer.stop();
-			});
-			view.popup.window.observe("deactivate", function(evt) {
-				view.popup.hideWindow();
-			});
-		} catch (e) {
-			println(e);
-		} finally {
-			w.free();
-		}
-		return view.popup.Window;
-	},
-	launch_server: function() {
-		HTTPD.create(let(count = 0)({
-			httpOptions: {
-				compress: true,
-			},
-			paths: {
-				//ルート(/)への割り当ては「""」とする。
-				'': Main.directory.directory('doc'),
-				'/doc': function(c) {
-					if (c.pathInfo) {
-						var q = c.params.q;
-						var n = c.pathInfo;
-						println(q);
-						c.beginHTML({
-							title: "view document: " + n,
-							styles: [
-								"body{line-heigt:1.25em;",
-								"background-color:#111111;color:#FFFFFF;margin:5px;min-height:22px;}"
-							]
-						});
-					} else if (c.params.q) {
-						var q = c.params.q;
-						c.beginHTML({
-							title: "document search result: " + q,
-							styles: [
-								"body{line-heigt:1.25em;",
-								"background-color:#111111;color:#FFFFFF;margin:5px;min-height:22px;}"
-							]
-						});
-						c.write('<p id="translated">' + q.escapeHTML() + '</p>')
-					}
-					c.endHTML();
-				}
-			}
-		}));
-	}
+    window: (function() {
+        var win = Window.create({
+            title: 'IE test',
+            width: Display.width * 0.8,
+            height: 100,
+            top: Display.height - 100,
+            left: Display.width * 0.2,
+            children: {
+                ie: {
+                    type: Trident,
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    events: {
+                        activate: function(evt) {
+                            println("test-")
+                            if (view.popup.timer && view.popup.timer.running) view.popup.timer.stop();
+                        },
+                        unfocus: function(evt) {
+                            view.popup.timer = new Timer((function() {
+                                view.popup.window.hide();
+                            }), 5 * 1000, true);
+                            view.popup.timer.run();
+                        }
+                    }
+                }
+            }
+        });
+        win.observe("activate", function(evt) {
+            if (view.popup.timer && view.popup.timer.running) view.popup.timer.stop();
+        });
+        win.observe("deactivate", function(evt) {
+            view.popup.hideWindow();
+        });
+        return win;
+    })(),
+    timer: null,
+    hideWindow: function(msec) {
+        view.popup.timer = new Timer((function() {
+            view.popup.window.hide();
+        }), 5 * 1000, true);
+        view.popup.timer.run();
+    },
+    showWindow: function() {
+        if (view.popup.timer && view.popup.timer.running) {
+            view.popup.timer.stop();
+        }
+        var win = view.popup.getWindow();
+        if (win) {
+            //win.moveTo(x + 30, y + 30);
+            win.show()
+            return win;
+        }
+    },
+    getWindow: function() {
+        if (view.popup.window && view.popup.window.exists) {
+            return view.popup.window;
+        }
+        try {
+            view.popup.window = Window.create({
+                title: '翻訳パネル',
+                width: Display.width * 0.8,
+                height: 100,
+                top: Display.height - 100,
+                left: Display.width * 0.2,
+                children: {
+                    ie: {
+                        type: Trident,
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        events: {
+                            activate: function(evt) {
+                                if (view.popup.timer && view.popup.timer.running) view.popup.timer.stop();
+                            },
+                            unfocus: function(evt) {
+                                view.popup.timer = new Timer((function() {
+                                    view.popup.window.hide();
+                                }), 5 * 1000, true);
+                                view.popup.timer.run();
+                            }
+                        }
+                    }
+                }
+            });
+            view.popup.window.observe("activate", function(evt) {
+                if (view.popup.timer && view.popup.timer.running) view.popup.timer.stop();
+            });
+            view.popup.window.observe("deactivate", function(evt) {
+                view.popup.hideWindow();
+            });
+        } catch (e) {
+            println(e);
+        } finally {
+            w.free();
+        }
+        return view.popup.Window;
+    },
+    launch_server: function() {
+        HTTPD.create(let(count = 0)({
+            httpOptions: {
+                compress: true,
+            },
+            paths: {
+                //ルート(/)への割り当ては「""」とする。
+                '': Main.directory.directory('doc'),
+                '/doc': function(c) {
+                    if (c.pathInfo) {
+                        var q = c.params.q;
+                        var n = c.pathInfo;
+                        println(q);
+                        c.beginHTML({
+                            title: "view document: " + n,
+                            styles: [
+                                "body{line-heigt:1.25em;",
+                                "background-color:#111111;color:#FFFFFF;margin:5px;min-height:22px;}"
+                            ]
+                        });
+                    } else if (c.params.q) {
+                        var q = c.params.q;
+                        c.beginHTML({
+                            title: "document search result: " + q,
+                            styles: [
+                                "body{line-heigt:1.25em;",
+                                "background-color:#111111;color:#FFFFFF;margin:5px;min-height:22px;}"
+                            ]
+                        });
+                        c.write('<p id="translated">' + q.escapeHTML() + '</p>')
+                    }
+                    c.endHTML();
+                }
+            }
+        }));
+    }
 }
 view.popup.launch_server();
 view.showResult = function(str) {
-	if (str) {
-		str = str.trim();
-		var win = view.popup.showWindow();
-		win.ie.invoke('navigate',"http://localhost/doc?q=" + encodeURI(str.replace("\n", "<br>")));
-		win.topmost = true;
-		view.popup.hideWindow(5000);
-	}
+    if (str) {
+        str = str.trim();
+        var win = view.popup.showWindow();
+        win.ie.invoke('navigate', "http://localhost/doc?q=" + encodeURI(str.replace("\n", "<br>")));
+        win.topmost = true;
+        view.popup.hideWindow(5000);
+    }
 }
 view.translateText = function(str) {
-	var win = view.popup.showWindow();
-	if (win) {
-		if (view.isWord(str)) {
-			model.getALC(str, view.showResult); // 英単語翻訳
-		} else {
-			model.getExcite(str, view.showResult);// 文章
-		}
-	}
+    var win = view.popup.showWindow();
+    if (win) {
+        if (view.isWord(str)) {
+            model.getALC(str, view.showResult); // 英単語翻訳
+        } else {
+            model.getExcite(str, view.showResult);// 文章
+        }
+    }
 }
 /**
  * 単語ならtrue , 文章ならfalse
  * @param str
  */
 view.isWord = function(str) {
-	return str.split(" ").length <= 3;
+    return str.split(" ").length <= 3;
 }
 
 /*controll*/
