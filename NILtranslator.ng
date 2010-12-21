@@ -103,7 +103,9 @@ model.getALC = function (word, callback) {
 }
 /*view*/
 view.popup = {
-    window: (function() {
+    window: null,
+    timer: null,
+    createWindow : function() {
         var win = Window.create({
             title: 'IE test',
             width: Display.width * 0.8,
@@ -116,36 +118,18 @@ view.popup = {
                     top: 0,
                     left: 0,
                     right: 0,
-                    bottom: 0,
-                    events: {
-                        activate: function(evt) {
-                            println("test-")
-                            if (view.popup.timer && view.popup.timer.running) view.popup.timer.stop();
-                        },
-                        unfocus: function(evt) {
-                            view.popup.timer = new Timer((function() {
-                                view.popup.window.hide();
-                            }), 5 * 1000, true);
-                            view.popup.timer.run();
-                        }
-                    }
+                    bottom: 0
                 }
             }
         });
-        win.observe("activate", function(evt) {
-            if (view.popup.timer && view.popup.timer.running) view.popup.timer.stop();
-        });
-        win.observe("deactivate", function(evt) {
-            view.popup.hideWindow();
-        });
         return win;
-    })(),
-    timer: null,
+    },
     hideWindow: function(msec) {
         view.popup.timer = new Timer((function() {
             view.popup.window.hide();
         }), 5 * 1000, true);
         view.popup.timer.run();
+        return view.popup.timer;
     },
     showWindow: function() {
         if (view.popup.timer && view.popup.timer.running) {
@@ -161,47 +145,16 @@ view.popup = {
     getWindow: function() {
         if (view.popup.window && view.popup.window.exists) {
             return view.popup.window;
+        } else {
+            try {
+                view.popup.window = view.popup.createWindow();
+            } catch (e) {
+                println(e);
+            } finally {
+                w.free();
+            }
+            return view.popup.Window;
         }
-        try {
-            view.popup.window = Window.create({
-                title: '翻訳パネル',
-                width: Display.width * 0.8,
-                height: 100,
-                top: Display.height - 100,
-                left: Display.width * 0.2,
-                children: {
-                    ie: {
-                        type: Trident,
-                        top: 0,
-                        left: 0,
-                        right: 0,
-                        bottom: 0,
-                        events: {
-                            activate: function(evt) {
-                                if (view.popup.timer && view.popup.timer.running) view.popup.timer.stop();
-                            },
-                            unfocus: function(evt) {
-                                view.popup.timer = new Timer((function() {
-                                    view.popup.window.hide();
-                                }), 5 * 1000, true);
-                                view.popup.timer.run();
-                            }
-                        }
-                    }
-                }
-            });
-            view.popup.window.observe("activate", function(evt) {
-                if (view.popup.timer && view.popup.timer.running) view.popup.timer.stop();
-            });
-            view.popup.window.observe("deactivate", function(evt) {
-                view.popup.hideWindow();
-            });
-        } catch (e) {
-            println(e);
-        } finally {
-            w.free();
-        }
-        return view.popup.Window;
     },
     launch_server: function() {
         HTTPD.create(let(count = 0)({
@@ -240,18 +193,29 @@ view.popup = {
         }));
     }
 }
-view.popup.launch_server();
+model.createViewHTML = function(text) {
+    var HTML = '<body style="line-heigt:1.25em;background-color:#111111;color:#FFFFFF;margin:5px;min-height:22px;">'
+            + text
+            + '</body>'
+    return HTML;
+}
+//view.popup.launch_server();
 view.showResult = function(str) {
+    println(str);
     if (str) {
         str = str.trim();
-        var win = view.popup.showWindow();
-        win.ie.invoke('navigate', "http://localhost/doc?q=" + encodeURI(str.replace("\n", "<br>")));
+        var win = view.popup.getWindow();
+        if (!win.visible) {
+            win.show(true);
+        }
         win.topmost = true;
         view.popup.hideWindow(5000);
+        println("描画開始する");
+        win.ie.update(model.createViewHTML());
     }
 }
 view.translateText = function(str) {
-    var win = view.popup.showWindow();
+    var win = view.popup.getWindow();
     if (win) {
         if (view.isWord(str)) {
             model.getALC(str, view.showResult); // 英単語翻訳
