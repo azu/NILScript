@@ -97,7 +97,6 @@ model.fireClipbodChange = function() {
         model.clipboard.locked = true;
         var bkText = Clipboard.text;
         model.clipboard.addEvent();
-        sleep(100)
         Hotstrokes.send("Ctrl+C");
         // model.clipboard.removeEvent();
         Clipboard.text = bkText;
@@ -109,6 +108,31 @@ model.fireClipbodChange = function() {
         //            }
         //        })(bkText));
     }
+}
+model.googleTranslator = function(str, callback) {
+    var API = "http://ajax.googleapis.com/ajax/services/language/translate?v=1.0&langpair=en|ja&q=" + encodeURIComponent(str);
+    var searchRegexp = model.getExcite.regexp || (model.getExcite.regexp = /id="after".*?>([^<]*?)<\/textarea>/im);
+    var xhr = http.request({
+        method: "get",
+        url: API,
+        headers: {
+            'User-agent': 'Mozilla/5.0 (compatible)',
+        },
+        events: {
+            response: function() {
+                var res = this.response;
+                if (res.status == 200) {
+                    println(res);
+                    var resJSON = JSON.parse(res.readText());
+                    if(resJSON.responseStatus == 200){
+                        callback(resJSON.responseData.translatedText)
+                    }
+                } else {
+                    // callback(res.statusText);
+                }
+            }
+        }
+    }).send();
 }
 /**
  * http://www.excite.co.jp/world/english/ で英日翻訳
@@ -278,7 +302,7 @@ view.translateText = function(str) {
     if (view.isWord(str)) {
         model.getALC(str, view.showResult); // 英単語翻訳
     } else {
-        model.getExcite(str, view.showResult);// 文章
+        model.googleTranslator(str, view.showResult);// 文章
     }
 }
 /**
@@ -288,7 +312,7 @@ view.translateText = function(str) {
 view.isWord = function(str) {
     return (str.split(" ").length <= 3);
 }
-view.encodePlus = function(str){
+view.encodePlus = function(str) {
     return encodeURIComponent(str).replace("%20", "+", "g")
 }
 
