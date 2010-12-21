@@ -205,7 +205,7 @@ view.showResult = function(str) {
         // ポップアップ内でのリンク移動にフック
         if (!win.ie.object.isObserved('BeforeNavigate2')) {
             win.ie.object.observe('BeforeNavigate2', function(o) {
-                if (/^http:\/\/eow\.alc\.co\.jp/) {
+                if (/^http:\/\/eow\.alc\.co\.jp/.test(o.URL))) {
                     o.Cancel = true;
                     model.getALC(o.URL, view.showResult);
                 } else {
