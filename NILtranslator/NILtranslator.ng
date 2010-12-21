@@ -199,11 +199,9 @@ view.popup = {
 //view.popup.launch_server();
 view.showResult = function(str) {
     if (str) {
-        str = str.trim();
         var win = view.popup.getWindow();
         var body = model.createViewHTML(str);
         win.ie.update(body);
-
         // ポップアップ内でのリンク移動にフック
         if (!win.ie.object.isObserved('BeforeNavigate2')) {
             win.ie.object.observe('BeforeNavigate2', function(o) {
@@ -219,6 +217,10 @@ view.showResult = function(str) {
     }
 }
 view.translateText = function(str) {
+    var win = view.popup.getWindow();
+    // 画面内でのスクロールを初期化する意味を込めて
+    win.ie.update(model.createViewHTML("ロード…"));
+    controll.showWindow(win);
     if (view.isWord(str)) {
         model.getALC(str, view.showResult); // 英単語翻訳
     } else {
