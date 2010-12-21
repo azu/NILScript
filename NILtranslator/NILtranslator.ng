@@ -143,12 +143,34 @@ model.createViewHTML = function(text) {
             + '<style type="text/css">'
             + style
             + '</style>'
+            + '<script type="text/javascript">'
+            +  'document.createElement("md");//IE Hack'
+            + '</script>'
             + '</head>'
             + '<body>'
-            + '<div id="main">' + text + '</div>'
+            + '<div id="main">' +
+            text.replace(/<(\/md|md)>/g, function(_, _1) {
+                return {
+                    '\/md' : '</div>',
+                    'md' : '<div class="md">'
+                }[_1]
+            })
             + '</body>'
             + '</html>';
+    println(HTML);
     return HTML;
+}
+// HTMLエンティティしたものを戻す
+function htmlEntityDecode(str) {
+    return str.replace(/&(lt|gt|quot|amp);/g, function(_, _1) {
+        return {lt:'<', gt:'>', quot:'"', amp:'&'}[_1];
+    });
+}
+// HTMLエンティティに変換
+function htmlEntityEecode(str) {
+    return str.replace(/(<|>|"|&)/g, function(_, _1) {
+        return '&' + {'<':'lt', '>':'gt', '"':'quot', '&':'amp'}[_1] + ';';
+    });
 }
 /*view*/
 view.popup = {

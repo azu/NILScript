@@ -1,29 +1,45 @@
-a{/*リンクされた文字*/
+a {
+/*リンクされた文字*/
     color: #00ffff;
-    font-style:normal;
-    text-decoration:underline;
+    font-style: normal;
+    text-decoration: underline;
 }
-a:link {/*未訪問のリンク*/
+
+a:link {
+/*未訪問のリンク*/
     color: #00ccff;
-    font-style:normal;
-    text-decoration:underline;
+    font-style: normal;
+    text-decoration: underline;
 }
-a:visited {/*訪問後のリンク*/
-    color:#934C7B;
-    text-decoration:underline;
+
+a:visited {
+/*訪問後のリンク*/
+    color: #934C7B;
+    text-decoration: underline;
 }
-a:hover {/*マウスをのせたとき*/
-    color:#ff0000;
-    font-style:normal;
-    text-decoration:underline;
+
+a:hover {
+/*マウスをのせたとき*/
+    color: #ff0000;
+    font-style: normal;
+    text-decoration: underline;
 }
-a:active {/*クリック中*/
-    text-decoration:none;
+
+a:active {
+/*クリック中*/
+    text-decoration: none;
 }
+
 body {
     line-heigt: 1.25em;
     background-color: #111111;
     color: #FFFFFF;
     margin: 5px;
     min-height: 22px;
+}
+
+md {
+    display: block;
+    visibility: hidden;
+    font-size:1px;
 }
