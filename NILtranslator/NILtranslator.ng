@@ -62,19 +62,44 @@ controll.showWindow = function(win) {
     return this;
 }
 /*model*/
-model.init = function() {
-    var max = 10;
-    var hist = [Clipboard.text];
-    Clipboard.observe('change', function(obj) {
+model.clipboard = {
+    hist:"",
+    listner : function(obj) {
         if (this.hasFormat('text')) {
             var text = this.text;
-            if (text && (hist.indexOf(text) == -1)) {
-                hist.unshift(text);
-                hist = hist.slice(0, max);
+            var hist = model.clipboard.hist;
+            println(hist + " : " + text);
+            if (text && (hist !== text)) {
+                println("変換開始");
+                model.clipboard.hist = text;
                 view.translateText(text);
             }
         }
-    });
+    },
+    addEvent : function() {
+        if (!Clipboard.isObserved("change")) {
+            Clipboard.observe('change', model.clipboard.listner);
+        }
+    },
+    removeEvent : function() {
+        Clipboard.unobserve('change', model.clipboard.listner);
+    },
+    // changeイベントが発生しないようなタイミングでfnを呼ぶ
+    normalizeCallFn : function(fn) {
+        model.clipboard.removeEvent();
+        fn();
+        model.clipboard.addEvent();
+    }
+}
+model.fireClipbodChange = function() {
+    var bkText = Clipboard.text;
+    model.clipboard.addEvent();
+    Hotstrokes.send("Ctrl+C");
+    model.clipboard.normalizeCallFn((function(bkText) {
+        return function() {
+            Clipboard.text = bkText;
+        }
+    })(bkText))
 }
 /**
  * http://www.excite.co.jp/world/english/ で英日翻訳
@@ -152,7 +177,6 @@ model.createViewHTML = function(text) {
             + text
             + '</body>'
             + '</html>';
-    println(HTML);
     return HTML;
 }
 // HTMLエンティティしたものを戻す
@@ -174,6 +198,9 @@ view.popup = {
     createWindow : function() {
         var win = Window.create({
             title: '翻訳パネル',
+            isPopupWindow:true,hasTickFrame:false,hasBorder:false,hasDlgFrame:false,
+            transparentColor:0xFF01FF,
+            alpha:196,
             width: Display.width * 0.8,
             height: 250,
             top: Display.height - 250,
@@ -202,14 +229,8 @@ view.popup = {
         if (view.popup.window && view.popup.window.exists) {
             return view.popup.window;
         } else {
-            try {
-                view.popup.window = view.popup.createWindow();
-            } catch (e) {
-                println(e);
-            } finally {
-                w.free();
-            }
-            return view.popup.Window;
+            view.popup.window = view.popup.createWindow();
+            return view.popup.window;
         }
     }
 }
@@ -254,4 +275,10 @@ view.isWord = function(str) {
 
 
 /* init */
-model.init();
+//model.clipboard.addEvent();
+Clipboard.clear();
+Hotstrokes.defineConditions({}).map({
+    'Shift*2':function() {
+        model.fireClipbodChange();
+    }
+}).register();
