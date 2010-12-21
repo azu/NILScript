@@ -133,9 +133,18 @@ model.getALC = function (word, callback) {
         }
     }).send();
 }
+// cssファイルを読み込む
+model.popupStyle = Main.scriptDirectory.file("panel-style.css").load();
 model.createViewHTML = function(text) {
+    var style = model.popupStyle;
+    println(style);
     var HTML = '<html>'
-            + '<body style="line-heigt:1.25em;background-color:#111111;color:#FFFFFF;margin:5px;min-height:22px;">'
+            + '<head>'
+            + '<style type="text/css">'
+            + style
+            + '</style>'
+            + '</head>'
+            + '<body>'
             + '<div id="main">' + text + '</div>'
             + '</body>'
             + '</html>';
