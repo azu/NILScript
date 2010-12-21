@@ -34,6 +34,7 @@ controll.hideWindow = function hideWindow(win) {
         win = view.popup.getWindow();
     }
     win.hide();
+    return this;
 }
 controll.hideWindowDelay = function(win, msec) {
     controll.stopHideTimer();
@@ -41,7 +42,7 @@ controll.hideWindowDelay = function(win, msec) {
         controll.hideWindow(win);
     }), msec, true);
     view.popup.timer.run();
-    return view.popup.timer;
+    return this;
 }
 controll.stopHideTimer = function() {
     if (view.popup.timer && view.popup.timer.running) {
@@ -58,7 +59,7 @@ controll.showWindow = function(win) {
         win.show(true);
     }
     win.topmost = true;
-    return win;
+    return this;
 }
 /*model*/
 model.init = function() {
@@ -116,7 +117,7 @@ model.getExcite = function(str, callback) {
  * @param callback
  */
 model.getALC = function (word, callback) {
-    var API = "http://eow.alc.co.jp/eow/sp/" + word + "/UTF-8/";
+    var API = (/^http/.test(word)) ? word : "http://eow.alc.co.jp/eow/sp/" + word + "/UTF-8/";
     var xhr = http.request({
         method: "get",
         url: API,
@@ -137,7 +138,6 @@ model.getALC = function (word, callback) {
 model.popupStyle = Main.scriptDirectory.file("panel-style.css").load();
 model.createViewHTML = function(text) {
     var style = model.popupStyle;
-    println(style);
     var HTML = '<html>'
             + '<head>'
             + '<style type="text/css">'
@@ -158,8 +158,8 @@ view.popup = {
         var win = Window.create({
             title: '翻訳パネル',
             width: Display.width * 0.8,
-            height: 100,
-            top: Display.height - 100,
+            height: 250,
+            top: Display.height - 250,
             left: Display.width * 0.2,
             children: {
                 ie: {
@@ -203,8 +203,19 @@ view.showResult = function(str) {
         var win = view.popup.getWindow();
         var body = model.createViewHTML(str);
         win.ie.update(body);
-        controll.showWindow(win);
-        controll.hideWindowDelay(win, 5000);
+
+        // ポップアップ内でのリンク移動にフック
+        if (!win.ie.object.isObserved('BeforeNavigate2')) {
+            win.ie.object.observe('BeforeNavigate2', function(o) {
+                if (/^http:\/\/eow\.alc\.co\.jp/) {
+                    o.Cancel = true;
+                    model.getALC(o.URL, view.showResult);
+                } else {
+                    win.ie.invoke('navigate', o.URL);
+                }
+            });
+        }
+        controll.showWindow(win).hideWindowDelay(win, 5000);
     }
 }
 view.translateText = function(str) {
