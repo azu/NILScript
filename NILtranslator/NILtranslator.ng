@@ -28,6 +28,38 @@ use('Window', 'ATL', 'HTTPD');
  */
 var controll = {}, model = {}, view = {};
 
+/*controll*/
+controll.hideWindow = function hideWindow(win) {
+    if (!win) {
+        win = view.popup.getWindow();
+    }
+    win.hide();
+}
+controll.hideWindowDelay = function(win, msec) {
+    controll.stopHideTimer();
+    view.popup.timer = new Timer((function() {
+        controll.hideWindow(win);
+    }), msec, true);
+    view.popup.timer.run();
+    return view.popup.timer;
+}
+controll.stopHideTimer = function() {
+    if (view.popup.timer && view.popup.timer.running) {
+        view.popup.timer.stop();
+    }
+}
+// ウィンドウを最前面に表示
+controll.showWindow = function(win) {
+    controll.stopHideTimer();
+    if (!win) {
+        win = view.popup.getWindow();
+    }
+    if (!win.visible) {
+        win.show(true);
+    }
+    win.topmost = true;
+    return win;
+}
 /*model*/
 model.init = function() {
     var max = 10;
@@ -101,13 +133,21 @@ model.getALC = function (word, callback) {
         }
     }).send();
 }
+model.createViewHTML = function(text) {
+    var HTML = '<html>'
+            + '<body style="line-heigt:1.25em;background-color:#111111;color:#FFFFFF;margin:5px;min-height:22px;">'
+            + '<div id="main">' + text + '</div>'
+            + '</body>'
+            + '</html>';
+    return HTML;
+}
 /*view*/
 view.popup = {
     window: null,
     timer: null,
     createWindow : function() {
         var win = Window.create({
-            title: 'IE test',
+            title: '翻訳パネル',
             width: Display.width * 0.8,
             height: 100,
             top: Display.height - 100,
@@ -120,27 +160,17 @@ view.popup = {
                     right: 0,
                     bottom: 0
                 }
+            },
+            events: {
+                activate: function(evt) {
+                    controll.stopHideTimer();
+                },
+                deactivate: function(evt) {
+                    controll.hideWindowDelay(win, 1000);
+                }
             }
         });
         return win;
-    },
-    hideWindow: function(msec) {
-        view.popup.timer = new Timer((function() {
-            view.popup.window.hide();
-        }), 5 * 1000, true);
-        view.popup.timer.run();
-        return view.popup.timer;
-    },
-    showWindow: function() {
-        if (view.popup.timer && view.popup.timer.running) {
-            view.popup.timer.stop();
-        }
-        var win = view.popup.getWindow();
-        if (win) {
-            //win.moveTo(x + 30, y + 30);
-            win.show()
-            return win;
-        }
     },
     getWindow: function() {
         if (view.popup.window && view.popup.window.exists) {
@@ -155,73 +185,24 @@ view.popup = {
             }
             return view.popup.Window;
         }
-    },
-    launch_server: function() {
-        HTTPD.create(let(count = 0)({
-            httpOptions: {
-                compress: true,
-            },
-            paths: {
-                //ルート(/)への割り当ては「""」とする。
-                '': Main.directory.directory('doc'),
-                '/doc': function(c) {
-                    if (c.pathInfo) {
-                        var q = c.params.q;
-                        var n = c.pathInfo;
-                        println(q);
-                        c.beginHTML({
-                            title: "view document: " + n,
-                            styles: [
-                                "body{line-heigt:1.25em;",
-                                "background-color:#111111;color:#FFFFFF;margin:5px;min-height:22px;}"
-                            ]
-                        });
-                    } else if (c.params.q) {
-                        var q = c.params.q;
-                        c.beginHTML({
-                            title: "document search result: " + q,
-                            styles: [
-                                "body{line-heigt:1.25em;",
-                                "background-color:#111111;color:#FFFFFF;margin:5px;min-height:22px;}"
-                            ]
-                        });
-                        c.write('<p id="translated">' + q.escapeHTML() + '</p>')
-                    }
-                    c.endHTML();
-                }
-            }
-        }));
     }
-}
-model.createViewHTML = function(text) {
-    var HTML = '<body style="line-heigt:1.25em;background-color:#111111;color:#FFFFFF;margin:5px;min-height:22px;">'
-            + text
-            + '</body>'
-    return HTML;
 }
 //view.popup.launch_server();
 view.showResult = function(str) {
-    println(str);
     if (str) {
         str = str.trim();
         var win = view.popup.getWindow();
-        if (!win.visible) {
-            win.show(true);
-        }
-        win.topmost = true;
-        view.popup.hideWindow(5000);
-        println("描画開始する");
-        win.ie.update(model.createViewHTML());
+        var body = model.createViewHTML(str);
+        win.ie.update(body);
+        controll.showWindow(win);
+        controll.hideWindowDelay(win, 5000);
     }
 }
 view.translateText = function(str) {
-    var win = view.popup.getWindow();
-    if (win) {
-        if (view.isWord(str)) {
-            model.getALC(str, view.showResult); // 英単語翻訳
-        } else {
-            model.getExcite(str, view.showResult);// 文章
-        }
+    if (view.isWord(str)) {
+        model.getALC(str, view.showResult); // 英単語翻訳
+    } else {
+        model.getExcite(str, view.showResult);// 文章
     }
 }
 /**
@@ -229,10 +210,9 @@ view.translateText = function(str) {
  * @param str
  */
 view.isWord = function(str) {
-    return str.split(" ").length <= 3;
+    return (str.split(" ").length <= 3);
 }
 
-/*controll*/
 
 /* init */
 model.init();
