@@ -35,15 +35,20 @@ body {
     background-color: #111111;
     color: #FFFFFF;
     margin: 25px;
-    padding:5px;
+    padding: 5px;
     min-height: 22px;
+}
+
+#main {
+    line-height: 1.5;
 }
 
 md {
     display: block;
     visibility: hidden;
-    font-size:1px;
+    font-size: 1px;
 }
+
 kn {
     display: none;
 }

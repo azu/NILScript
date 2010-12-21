@@ -34,7 +34,7 @@ controll.hideWindow = function hideWindow(win) {
         win = view.popup.getWindow();
     }
     win.hide();
-    return this;
+    return controll;
 }
 controll.hideWindowDelay = function(win, msec) {
     controll.stopHideTimer();
@@ -42,7 +42,7 @@ controll.hideWindowDelay = function(win, msec) {
         controll.hideWindow(win);
     }), msec, true);
     view.popup.timer.run();
-    return this;
+    return controll;
 }
 controll.stopHideTimer = function() {
     if (view.popup.timer && view.popup.timer.running) {
@@ -59,20 +59,19 @@ controll.showWindow = function(win) {
         win.show(true);
     }
     win.topmost = true;
-    return this;
+    return controll;
 }
 /*model*/
 model.clipboard = {
     // イベントのadd,removeはロックしてからやる
     locked: false,
-    hist:"",
+    hist: "",
     listner : function(obj) {
         if (this.hasFormat('text')) {
             var text = this.text;
             var hist = model.clipboard.hist;
-            println(hist + " : " + text);
+            // println(hist + " : " + text);
             if (text && (hist !== text)) {
-                println("変換開始");
                 model.clipboard.hist = text;
                 view.translateText(text);
             }
@@ -98,13 +97,17 @@ model.fireClipbodChange = function() {
         model.clipboard.locked = true;
         var bkText = Clipboard.text;
         model.clipboard.addEvent();
+        sleep(100)
         Hotstrokes.send("Ctrl+C");
-        model.clipboard.normalizeCallFn((function(bkText) {
-            return function() {
-                Clipboard.text = bkText;
-                model.clipboard.locked = false;
-            }
-        })(bkText));
+        // model.clipboard.removeEvent();
+        Clipboard.text = bkText;
+        model.clipboard.locked = false;
+        //        model.clipboard.normalizeCallFn((function(bkText) {
+        //            return function() {
+        //                Clipboard.text = bkText;
+        //                model.clipboard.locked = false;
+        //            }
+        //        })(bkText));
     }
 }
 /**
@@ -114,16 +117,17 @@ model.fireClipbodChange = function() {
  */
 model.getExcite = function(str, callback) {
     var API = "http://www.excite.co.jp/world/english/"
-    var searchRegexp = model.getExcite.regexp || (model.getExcite.regexp = /id="after">([^<]*?)</m);
+    var searchRegexp = model.getExcite.regexp || (model.getExcite.regexp = /id="after".*?>([^<]*?)<\/textarea>/im);
     var xhr = http.request({
         method: "post",
         url: API,
         headers: {
             'User-agent': 'Mozilla/5.0 (compatible)',
             'Content-Type': 'application/x-www-form-urlencoded',
-            'Accept': 'application/atom+xml,application/xml,text/xml'
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+            'Referer': 'http://www.excite.co.jp/world/english/'
         },
-        body: "before=" + str.replace(/\s/g, "+") + "&wb_lp=ENJA",
+        body: "before=" + view.encodePlus(str) + "&wb_lp=ENJA",
         events: {
             response: function() {
                 var res = this.response;
@@ -131,7 +135,9 @@ model.getExcite = function(str, callback) {
                     var input = res.readText();
                     if (searchRegexp.test(input)) {
                         var match = input.match(searchRegexp);
-                        callback((match && match[1]) || false);
+                        var m = match && match[1];
+                        println(match);
+                        callback(m);
                     } else {
                         alert("No matches found!");
                     }
@@ -206,7 +212,7 @@ view.popup = {
             title: '翻訳パネル',
             isPopupWindow:true,hasTickFrame:false,hasBorder:false,hasDlgFrame:false,
             transparentColor:0xFF01FF,
-            alpha:196,
+            alpha:216,
             width: Display.width * 0.8,
             height: 250,
             top: Display.height - 250,
@@ -242,6 +248,7 @@ view.popup = {
 }
 //view.popup.launch_server();
 view.showResult = function(str) {
+    println("view.showResult : " + str)
     if (str) {
         var win = view.popup.getWindow();
         var body = model.createViewHTML(str);
@@ -258,6 +265,9 @@ view.showResult = function(str) {
             });
         }
         controll.showWindow(win).hideWindowDelay(win, 5000);
+    } else {
+        var win = view.popup.getWindow();
+        controll.hideWindow(win);
     }
 }
 view.translateText = function(str) {
@@ -278,7 +288,9 @@ view.translateText = function(str) {
 view.isWord = function(str) {
     return (str.split(" ").length <= 3);
 }
-
+view.encodePlus = function(str){
+    return encodeURIComponent(str).replace("%20", "+", "g")
+}
 
 /* init */
 //model.clipboard.addEvent();
