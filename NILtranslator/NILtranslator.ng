@@ -63,6 +63,8 @@ controll.showWindow = function(win) {
 }
 /*model*/
 model.clipboard = {
+    // イベントのadd,removeはロックしてからやる
+    locked: false,
     hist:"",
     listner : function(obj) {
         if (this.hasFormat('text')) {
@@ -92,14 +94,18 @@ model.clipboard = {
     }
 }
 model.fireClipbodChange = function() {
-    var bkText = Clipboard.text;
-    model.clipboard.addEvent();
-    Hotstrokes.send("Ctrl+C");
-    model.clipboard.normalizeCallFn((function(bkText) {
-        return function() {
-            Clipboard.text = bkText;
-        }
-    })(bkText))
+    if (!model.clipboard.locked) {
+        model.clipboard.locked = true;
+        var bkText = Clipboard.text;
+        model.clipboard.addEvent();
+        Hotstrokes.send("Ctrl+C");
+        model.clipboard.normalizeCallFn((function(bkText) {
+            return function() {
+                Clipboard.text = bkText;
+                model.clipboard.locked = false;
+            }
+        })(bkText));
+    }
 }
 /**
  * http://www.excite.co.jp/world/english/ で英日翻訳
