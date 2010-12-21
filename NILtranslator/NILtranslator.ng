@@ -144,17 +144,12 @@ model.createViewHTML = function(text) {
             + style
             + '</style>'
             + '<script type="text/javascript">'
-            +  'document.createElement("md");//IE Hack'
+            + 'document.createElement("kn");document.createElement("md");//IE Hack'
             + '</script>'
             + '</head>'
             + '<body>'
-            + '<div id="main">' +
-            text.replace(/<(\/md|md)>/g, function(_, _1) {
-                return {
-                    '\/md' : '</div>',
-                    'md' : '<div class="md">'
-                }[_1]
-            })
+            + '<div id="main">'
+            + text
             + '</body>'
             + '</html>';
     println(HTML);
