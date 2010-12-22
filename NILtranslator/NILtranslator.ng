@@ -10,13 +10,17 @@
 Main.createNotifyIcon();
 Main.addCommands({
     reset:function() {
-        controll.settingChange();
+        controll.changePopupSetting();
+    },
+    actionSetting:function() {
+        controll.changeActionSetting();
     }
 });
 Main.addTexts({
-    reset:'パネル設定(&P)'
+    reset:'パネル設定(&P)',
+    actionSetting:'動作設定(&A)'
 });
-Main.notifyIcon.contextMenu = ['reset',null,'exit'];
+Main.notifyIcon.contextMenu = ['actionSetting','reset',null,'exit'];
 //安定性向上のため推奨
 Main.process.priority = Process.priority.high;
 var Clipboard = require('Clipboard').Clipboard;
@@ -38,12 +42,18 @@ use('Window', 'ATL', 'HTTPD');
 var controll = {}, model = {}, view = {};
 
 /*controll*/
-controll.settingChange = function() {
+// ポップアップ関連の設定を変更
+controll.changePopupSetting = function() {
     controll.closeWindow();
     view.settings.createWindow();
 }
+// 動作関連の設定を変更
+controll.changeActionSetting = function() {
+    controll.closeWindow();
+    view.settings.createActionWindow();
+}
 controll.closeWindow = function(win) {
-    win = (win) ? win : view.popup.window;
+    win = (win) ? win : view.popup.popupWindow;
     if (win && win.exists) {
         win.close();
         win = null;
@@ -86,16 +96,23 @@ controll.showWindow = function(win) {
 model.clipboard = {
     // イベントのadd,removeはロックしてからやる
     locked: false,
-    hist: "",
+    hist: "",//判定用
+    textByUser: "",
     listner : function(obj) {
         if (this.hasFormat('text')) {
-            var text = this.text;
+            var text = Clipboard.text;
             var hist = model.clipboard.hist;
-            // println(hist + " : " + text);
+            //println(hist + " : " + text);
             if (text && (hist !== text)) {
+                model.clipboard.process = true;
                 model.clipboard.hist = text;
                 view.translateText(text);
             }
+            if (!setting.isClipboard) {
+                model.clipboard.removeEvent();
+                Clipboard.text = model.clipboard.textByUser;// ユーザーのクリップボードを戻す
+            }
+            model.clipboard.locked = false;
         }
     },
     addEvent : function() {
@@ -116,18 +133,9 @@ model.clipboard = {
 model.fireClipbodChange = function() {
     if (!model.clipboard.locked) {
         model.clipboard.locked = true;
-        var bkText = Clipboard.text;
         model.clipboard.addEvent();
+        model.clipboard.textByUser = Clipboard.text;// ユーザーのクリップボードを保護
         Hotstrokes.send("Ctrl+C");
-        // model.clipboard.removeEvent();
-        Clipboard.text = bkText;
-        model.clipboard.locked = false;
-        //        model.clipboard.normalizeCallFn((function(bkText) {
-        //            return function() {
-        //                Clipboard.text = bkText;
-        //                model.clipboard.locked = false;
-        //            }
-        //        })(bkText));
     }
 }
 model.googleTranslator = function(str, callback) {
@@ -143,7 +151,6 @@ model.googleTranslator = function(str, callback) {
             response: function() {
                 var res = this.response;
                 if (res.status == 200) {
-                    println(res);
                     var resJSON = JSON.parse(res.readText());
                     if (resJSON.responseStatus == 200) {
                         callback(resJSON.responseData.translatedText)
@@ -181,7 +188,6 @@ model.getExcite = function(str, callback) {
                     if (searchRegexp.test(input)) {
                         var match = input.match(searchRegexp);
                         var m = match && match[1];
-                        println(match);
                         callback(m);
                     } else {
                         alert("No matches found!");
@@ -239,16 +245,18 @@ model.createViewHTML = function(text) {
 
 /*view*/
 view.settings = {
-    window : null,
+    actionWindow:null,
+    popupWindow : null,
+
     setValues : function(rect) {
-        var win = view.settings.window;
+        var win = view.settings.popupWindow;
         win.sleft.text = rect.left;
         win.stop.text = rect.top;
         win.swidth.text = rect.width;
         win.sheight.text = rect.height;
     },
     reDraw : function() {
-        var win = view.settings.window;
+        var win = view.settings.popupWindow;
         win.x = win.sleft.text
         win.y = win.stop.text;
         win.width = win.swidth.text;
@@ -259,7 +267,8 @@ view.settings = {
         }
     },
     createWindow : function() {
-        view.settings.window = Window.create({
+        view.settings.popupWindow = Window.create({
+            title : "設定",
             top:200,left:200,
             width:200,height:200,
             topmost:true,
@@ -269,17 +278,16 @@ view.settings = {
                     text: "保存",
                     height:20,
                     width:45,
-                    top:90,
-                    left:125,
+                    top:95,
+                    left:140,
                     events:{
                         click:function() {
-                            var rect = view.settings.window.rect;
-                            var win = view.settings.window;
+                            var rect = view.settings.popupWindow.rect;
+                            var win = view.settings.popupWindow;
                             if (win.salpha.text !== "") {
                                 var alphaValue = win.salpha.text - 0;
                                 rect.alpha = alphaValue;
                             }
-
                             pref("settings.json", 1).saveJSON(rect);
                             this.parent.close(true);
                         }
@@ -291,7 +299,7 @@ view.settings = {
                     height:20,
                     width:45,
                     top:120,
-                    left:125,
+                    left:140,
                     events:{
                         click:function() {
                             view.settings.reDraw();
@@ -303,7 +311,7 @@ view.settings = {
                     type: Edit,
                     text: "",
                     wantReturn: true,
-                    top: 60,
+                    top: 40,
                     left: 20,
                     height: 20,
                     width:50
@@ -313,7 +321,7 @@ view.settings = {
                     type: Edit,
                     text: "",
                     wantReturn: true,
-                    top: 40,
+                    top: 20,
                     left: 70,
                     height: 20,
                     width:50
@@ -323,7 +331,7 @@ view.settings = {
                     type: Edit,
                     text: "",
                     wantReturn: true,
-                    top: 60,
+                    top: 40,
                     left: 120,
                     height: 20,
                     width:50
@@ -333,7 +341,7 @@ view.settings = {
                     type: Edit,
                     text: "",
                     wantReturn: true,
-                    top: 80,
+                    top: 60,
                     left: 70,
                     height: 20,
                     width:50
@@ -343,8 +351,8 @@ view.settings = {
                     type: Static,
                     text: "アルファ値(10-255)",
                     wantReturn: true,
-                    top: 120,
-                    left: 20,
+                    top: 100,
+                    left: 10,
                     height: 24,
                     width:50
                 },
@@ -353,13 +361,12 @@ view.settings = {
                     type: Edit,
                     text: "",
                     wantReturn: true,
-                    top: 120,
+                    top: 100,
                     left: 70,
                     height: 20,
                     width:50
-                }
+                },
             },
-
             events:{
                 activate : function() {
                     view.settings.setValues(this.rect);
@@ -372,11 +379,81 @@ view.settings = {
                 }
             }
         }).show();
-        view.settings.window.focus();
+        view.settings.popupWindow.focus();
+    },
+    createActionWindow : function() {
+        view.settings.actionWindow = Window.create({
+            title : "設定",
+            top:200,left:200,
+            width:400,height:300,
+            children: {
+                save : {
+                    type:Button,
+                    text: "保存",
+                    height:20,
+                    width:45,
+                    bottom:25,
+                    right:25,
+                    events:{
+                        click:function() {
+                            var win = view.settings.actionWindow;
+                            var obj = {
+                                shortcut : win.shortcut.text,
+                                isClipboard : win.isClipboard.checked
+                            }
+                            setting.shortcutkey = obj.shortcut;
+                            setting.isClipboard = obj.isClipboard;
+                            pref("action_settings.json", 1).saveJSON(obj);
+                            this.parent.close(true);
+                            view.settings.actionWindow = null;
+                        }
+                    }
+                },
+                shortcutlabel : {
+                    noHideSel: true,
+                    type: Static,
+                    text: "ショートカットキー :",
+                    wantReturn: true,
+                    top: 50,
+                    left: 20,
+                    height: 24,
+                    width:100
+                },
+                shortcut : {
+                    type: Edit,
+                    text: setting.shortcutkey,
+                    wantReturn: true,
+                    top: 50,
+                    left: 120,
+                    height: 20,
+                    width:100
+                },
+                isClipboard : {
+                    type: CheckBox,
+                    checked : setting.isClipboard,
+                    text: "テキストコピーで翻訳",
+                    top: 80,
+                    left: 20,
+                    height: 20,
+                    width:150
+                },
+                disc : {
+                    noHideSel: true,
+                    type: Static,
+                    text: "*設定変更はソフトウェアの再起動後に反映",
+                    wantReturn: true,
+                    bottom: 10,
+                    left: 20,
+                    height: 24,
+                    width:250
+                }
+            }
+        }).show();
+        view.settings.actionWindow.focus();
     }
 }
 view.popup = {
-    window: null,
+    popupWindow: null,
     timer: null,
     createWindow : function() {
         var loadData = pref("settings.json", 1).loadJSON();
@@ -411,17 +488,17 @@ view.popup = {
         return win;
     },
     getWindow: function() {
-        if (view.popup.window && view.popup.window.exists) {
-            return view.popup.window;
+        if (view.popup.popupWindow && view.popup.popupWindow.exists) {
+            return view.popup.popupWindow;
         } else {
-            view.popup.window = view.popup.createWindow();
-            return view.popup.window;
+            view.popup.popupWindow = view.popup.createWindow();
+            return view.popup.popupWindow;
         }
     }
 }
 //view.popup.launch_server();
 view.showResult = function(str) {
-    println("view.showResult : " + str)
+    //println("view.showResult : " + str)
     if (str) {
         var win = view.popup.getWindow();
         var body = model.createViewHTML(str);
@@ -429,8 +506,8 @@ view.showResult = function(str) {
         // ポップアップ内でのリンク移動にフック
         if (!win.ie.object.isObserved('BeforeNavigate2')) {
             win.ie.object.observe('BeforeNavigate2', function(o) {
+                o.Cancel = true;
                 if (/^http:\/\/eow\.alc\.co\.jp/.test(o.URL)) {
-                    o.Cancel = true;
                     model.getALC(o.URL, view.showResult);
                 } else {
                     win.ie.invoke('navigate', o.URL);
@@ -466,12 +543,36 @@ view.encodePlus = function(str) {
 }
 
 /* init */
-//model.clipboard.addEvent();
-Hotstrokes.defineConditions({}).map({
-    'Shift*2':function() {
+var setting = {};
+setting.init = function() {
+    setting.load();
+    setting.setDefault();
+}
+setting.load = function() {
+    setting.action = pref("action_settings.json", 1).loadJSON();
+}
+setting.setDefault = function() {
+    if (setting.action) {
+        var action = setting.action;
+        setting.shortcutkey = (action.shortcut) ? action.shortcut : 'Shift*2'
+        setting.isClipboard = (action.isClipboard) ? action.isClipboard : false;
+        if (setting.shortcutkey) {
+            model.clipboard.addEvent();
+        }
+    } else {
+        setting.shortcutkey = 'Shift*2';
+    }
+    // キーボード
+    setting.mapobj = {};
+    setting.mapobj[setting.shortcutkey] = function() {
         model.fireClipbodChange();
     }
-}).register();
+    // ショートカット設定
+    Hotstrokes.defineConditions({}).map(setting.mapobj).register();
+}
+// 初期化
+setting.init();
+
 
 function log() {
     println.apply(this, arguments);
