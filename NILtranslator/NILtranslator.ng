@@ -8,6 +8,15 @@
 // ==/NILScript==
 // タスクバーアイコン
 Main.createNotifyIcon();
+Main.addCommands({
+    reset:function() {
+        controll.settingChange();
+    }
+});
+Main.addTexts({
+    reset:'パネル設定(&P)'
+});
+Main.notifyIcon.contextMenu = ['reset',null,'exit'];
 //安定性向上のため推奨
 Main.process.priority = Process.priority.high;
 var Clipboard = require('Clipboard').Clipboard;
@@ -29,6 +38,18 @@ use('Window', 'ATL', 'HTTPD');
 var controll = {}, model = {}, view = {};
 
 /*controll*/
+controll.settingChange = function() {
+    controll.closeWindow();
+    view.settings.createWindow();
+}
+controll.closeWindow = function(win) {
+    win = (win) ? win : view.popup.window;
+    if (win && win.exists) {
+        win.close();
+        win = null;
+    }
+
+}
 controll.hideWindow = function hideWindow(win) {
     if (!win) {
         win = view.popup.getWindow();
@@ -215,32 +236,160 @@ model.createViewHTML = function(text) {
             + '</html>';
     return HTML;
 }
-// HTMLエンティティしたものを戻す
-function htmlEntityDecode(str) {
-    return str.replace(/&(lt|gt|quot|amp);/g, function(_, _1) {
-        return {lt:'<', gt:'>', quot:'"', amp:'&'}[_1];
-    });
-}
-// HTMLエンティティに変換
-function htmlEntityEecode(str) {
-    return str.replace(/(<|>|"|&)/g, function(_, _1) {
-        return '&' + {'<':'lt', '>':'gt', '"':'quot', '&':'amp'}[_1] + ';';
-    });
-}
+
 /*view*/
+view.settings = {
+    window : null,
+    setValues : function(rect) {
+        var win = view.settings.window;
+        win.sleft.text = rect.left;
+        win.stop.text = rect.top;
+        win.swidth.text = rect.width;
+        win.sheight.text = rect.height;
+    },
+    reDraw : function() {
+        var win = view.settings.window;
+        win.x = win.sleft.text
+        win.y = win.stop.text;
+        win.width = win.swidth.text;
+        win.height = win.sheight.text;
+        var alphaValue = (win.salpha.text !== "") ? win.salpha.text - 1 : undefined;
+        if (10 <= alphaValue && alphaValue <= 255) {
+            win.alpha = alphaValue;
+        }
+    },
+    createWindow : function() {
+        view.settings.window = Window.create({
+            top:200,left:200,
+            width:200,height:200,
+            topmost:true,
+            children: {
+                save : {
+                    type:Button,
+                    text: "保存",
+                    height:20,
+                    width:45,
+                    top:90,
+                    left:125,
+                    events:{
+                        click:function() {
+                            var rect = view.settings.window.rect;
+                            var win = view.settings.window;
+                            if (win.salpha.text !== "") {
+                                var alphaValue = win.salpha.text - 0;
+                                rect.alpha = alphaValue;
+                            }
+
+                            pref("settings.json", 1).saveJSON(rect);
+                            this.parent.close(true);
+                        }
+                    }
+                },
+                redraw : {
+                    type:Button,
+                    text: "描画",
+                    height:20,
+                    width:45,
+                    top:120,
+                    left:125,
+                    events:{
+                        click:function() {
+                            view.settings.reDraw();
+                        }
+                    }
+                },
+                sleft: {
+                    noHideSel: true,
+                    type: Edit,
+                    text: "",
+                    wantReturn: true,
+                    top: 60,
+                    left: 20,
+                    height: 20,
+                    width:50
+                },
+                stop: {
+                    noHideSel: true,
+                    type: Edit,
+                    text: "",
+                    wantReturn: true,
+                    top: 40,
+                    left: 70,
+                    height: 20,
+                    width:50
+                },
+                swidth: {
+                    noHideSel: true,
+                    type: Edit,
+                    text: "",
+                    wantReturn: true,
+                    top: 60,
+                    left: 120,
+                    height: 20,
+                    width:50
+                },
+                sheight: {
+                    noHideSel: true,
+                    type: Edit,
+                    text: "",
+                    wantReturn: true,
+                    top: 80,
+                    left: 70,
+                    height: 20,
+                    width:50
+                },
+                salphaLabel : {
+                    noHideSel: true,
+                    type: Static,
+                    text: "アルファ値(10-255)",
+                    wantReturn: true,
+                    top: 120,
+                    left: 20,
+                    height: 24,
+                    width:50
+                },
+                salpha : {
+                    noHideSel: true,
+                    type: Edit,
+                    text: "",
+                    wantReturn: true,
+                    top: 120,
+                    left: 70,
+                    height: 20,
+                    width:50
+                }
+            },
+
+            events:{
+                activate : function() {
+                    view.settings.setValues(this.rect);
+                },
+                resize : function() {
+                    view.settings.setValues(this.rect);
+                },
+                mbuttonUp:function(o) {
+                    view.settings.setValues(this.rect)
+                }
+            }
+        }).show();
+        view.settings.window.focus();
+    }
+}
 view.popup = {
     window: null,
     timer: null,
     createWindow : function() {
+        var loadData = pref("settings.json", 1).loadJSON();
+        var isData = (loadData) ? true : false;
         var win = Window.create({
             title: '翻訳パネル',
             isPopupWindow:true,hasTickFrame:false,hasBorder:false,hasDlgFrame:false,
             transparentColor:0xFF01FF,
-            alpha:216,
-            width: Display.width * 0.8,
-            height: 250,
-            top: Display.height - 250,
-            left: Display.width * 0.2,
+            alpha:(isData && isData.alpha) ? loadData.alpha : 216,
+            width: (isData) ? loadData.width : Display.width * 0.8,
+            height: (isData) ? loadData.height : 250,
+            top: (isData) ? loadData.top : Display.height - 250,
+            left: (isData) ? loadData.left : Display.width * 0.2,
             children: {
                 ie: {
                     type: Trident,
@@ -318,9 +467,12 @@ view.encodePlus = function(str) {
 
 /* init */
 //model.clipboard.addEvent();
-Clipboard.clear();
 Hotstrokes.defineConditions({}).map({
     'Shift*2':function() {
         model.fireClipbodChange();
     }
 }).register();
+
+function log() {
+    println.apply(this, arguments);
+}
