@@ -412,7 +412,7 @@ view.settings = {
                 shortcutlabel : {
                     noHideSel: true,
                     type: Static,
-                    text: "ショートカットキー :",
+                    text: "ショートカットキー:",
                     wantReturn: true,
                     top: 50,
                     left: 20,
@@ -440,7 +440,7 @@ view.settings = {
                 disc : {
                     noHideSel: true,
                     type: Static,
-                    text: "*設定変更はソフトウェアの再起動後に反映",
+                    text: "ショートカットキーはHotstrokesクラスに従ったキー\n*設定変更はソフトウェアの再起動後に反映",
                     wantReturn: true,
                     bottom: 10,
                     left: 20,
