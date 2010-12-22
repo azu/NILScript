@@ -82,7 +82,6 @@ controll.stopHideTimer = function() {
 }
 // ウィンドウを最前面に表示
 controll.showWindow = function(win) {
-    controll.stopHideTimer();
     if (!win) {
         win = view.popup.getWindow();
     }
@@ -365,7 +364,7 @@ view.settings = {
                     left: 70,
                     height: 20,
                     width:50
-                },
+                }
             },
             events:{
                 activate : function() {
@@ -399,17 +398,29 @@ view.settings = {
                             var win = view.settings.actionWindow;
                             var obj = {
                                 shortcut : win.shortcut.text,
-                                isClipboard : win.isClipboard.checked
+                                isClipboard : win.isClipboard.checked,
+                                translateService :win.translateService.selectedString,
+                                hideDalayTime : win.hideDalayTime.text
                             }
-                            setting.shortcutkey = obj.shortcut;
-                            setting.isClipboard = obj.isClipboard;
+                            for (var i in obj) {
+                                setting[i] = obj[i];
+                            }
                             pref("action_settings.json", 1).saveJSON(obj);
                             this.parent.close(true);
                             view.settings.actionWindow = null;
                         }
                     }
                 },
-                shortcutlabel : {
+                isClipboard : {
+                    type: CheckBox,
+                    checked : setting.isClipboard,
+                    text: "テキストコピーで翻訳",
+                    top: 25,
+                    left: 20,
+                    height: 20,
+                    width:150
+                },
+                shortcutLabel : {
                     noHideSel: true,
                     type: Static,
                     text: "ショートカットキー:",
@@ -428,14 +439,47 @@ view.settings = {
                     height: 20,
                     width:100
                 },
-                isClipboard : {
-                    type: CheckBox,
-                    checked : setting.isClipboard,
-                    text: "テキストコピーで翻訳",
+                // action.translateService
+                translateServiceLabel : {
+                    noHideSel: true,
+                    type: Static,
+                    text: "翻訳するサービス:",
+                    wantReturn: true,
                     top: 80,
                     left: 20,
+                    height: 24,
+                    width:100
+                },
+                translateService:{
+                    type:ComboBox,
+                    isDropDownList:true,
+                    items:["Google" , "Excite"],
+                    droppedCount:5,
+                    hasVScroll:true,
+                    bottom:0,
+                    top:80,
+                    left:120,
+                    width:128,
+                    height:48
+                },
+                hideDalayTimeLabel : {
+                    noHideSel: true,
+                    type: Static,
+                    text: "ポップアップの\n消失時間(ミリ秒):",
+                    wantReturn: true,
+                    top: 110,
+                    left: 20,
+                    height: 24,
+                    width:100
+                },
+                hideDalayTime : {
+                    type: Edit,
+                    text: setting.hideDalayTime,
+                    wantReturn: true,
+                    top: 110,
+                    left: 120,
                     height: 20,
-                    width:150
+                    width:100
                 },
                 disc : {
                     noHideSel: true,
@@ -446,6 +490,13 @@ view.settings = {
                     left: 20,
                     height: 24,
                     width:250
+                }
+            },
+            events:{
+                create:function(o) {
+                    var def = (setting.translateService) ? setting.translateService : "Google";
+                    this.translateService.selectString(def);
+
                 }
             }
         }).show();
@@ -514,7 +565,9 @@ view.showResult = function(str) {
                 }
             });
         }
-        controll.showWindow(win).hideWindowDelay(win, 5000);
+        controll.showWindow(win);
+        log(setting.hideDalayTime);
+        controll.hideWindowDelay(win, setting.hideDalayTime);
     } else {
         var win = view.popup.getWindow();
         controll.hideWindow(win);
@@ -552,15 +605,13 @@ setting.load = function() {
     setting.action = pref("action_settings.json", 1).loadJSON();
 }
 setting.setDefault = function() {
-    if (setting.action) {
-        var action = setting.action;
-        setting.shortcutkey = (action.shortcut) ? action.shortcut : 'Shift*2'
-        setting.isClipboard = (action.isClipboard) ? action.isClipboard : false;
-        if (setting.shortcutkey) {
-            model.clipboard.addEvent();
-        }
-    } else {
-        setting.shortcutkey = 'Shift*2';
+    var action = setting.action || {};
+    setting.shortcutkey = (action.shortcut) ? action.shortcut : 'Shift*2'
+    setting.isClipboard = (action.isClipboard) ? action.isClipboard : false;
+    setting.translateService = (action.translateService) ? action.translateService : "Google";
+    setting.hideDalayTime = (action.hideDalayTime) ? action.hideDalayTime : 5000;
+    if (setting.shortcutkey) {
+        model.clipboard.addEvent();
     }
     // キーボード
     setting.mapobj = {};
