@@ -565,9 +565,7 @@ view.showResult = function(str) {
                 }
             });
         }
-        controll.showWindow(win);
-        log(setting.hideDalayTime);
-        controll.hideWindowDelay(win, setting.hideDalayTime);
+        controll.showWindow(win).hideWindowDelay(win, setting.hideDalayTime);
     } else {
         var win = view.popup.getWindow();
         controll.hideWindow(win);
