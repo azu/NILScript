@@ -137,7 +137,7 @@ model.fireClipbodChange = function() {
         Hotstrokes.send("Ctrl+C");
     }
 }
-model.googleTranslator = function(str, callback) {
+model.getGoogleTranslator = function(str, callback) {
     var API = "http://ajax.googleapis.com/ajax/services/language/translate?v=1.0&langpair=en|ja&q=" + encodeURIComponent(str);
     var searchRegexp = model.getExcite.regexp || (model.getExcite.regexp = /id="after".*?>([^<]*?)<\/textarea>/im);
     var xhr = http.request({
@@ -579,7 +579,11 @@ view.translateText = function(str) {
     if (view.isWord(str)) {
         model.getALC(str, view.showResult); // 英単語翻訳
     } else {
-        model.googleTranslator(str, view.showResult);// 文章
+        var translateByService = {
+            "google" : model.getGoogleTranslator,
+            "excite" : model.getExcite
+        }[setting.translateService];
+        translateByService(str, view.showResult);// 文章
     }
 }
 /**
