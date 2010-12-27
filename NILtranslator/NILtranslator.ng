@@ -28,6 +28,7 @@ var Hotstrokes = require('Hotstrokes').Hotstrokes;
 var Mouse = require('Mouse').Mouse;
 var Display = require('Window').Display;
 var http = new require("HTTP").HTTP();
+var LooseXML = require('LooseXML').HTML;
 use('Window', 'ATL', 'HTTPD');
 // MVC的に作りたい
 /*
@@ -99,6 +100,7 @@ model.clipboard = {
     textByUser: "",
     listner : function(obj) {
         if (this.hasFormat('text')) {
+            model.clipboard.locked = true;
             var text = Clipboard.text;
             var hist = model.clipboard.hist;
             //println(hist + " : " + text);
@@ -137,9 +139,13 @@ model.fireClipbodChange = function() {
         Hotstrokes.send("Ctrl+C");
     }
 }
+/**
+ * Google翻訳
+ * @param str
+ * @param callback
+ */
 model.getGoogleTranslator = function(str, callback) {
     var API = "http://ajax.googleapis.com/ajax/services/language/translate?v=1.0&langpair=en|ja&q=" + encodeURIComponent(str);
-    var searchRegexp = model.getExcite.regexp || (model.getExcite.regexp = /id="after".*?>([^<]*?)<\/textarea>/im);
     var xhr = http.request({
         method: "get",
         url: API,
@@ -199,7 +205,53 @@ model.getExcite = function(str, callback) {
     }).send();
 }
 /**
- * http://www.alc.co.jp/ で翻訳
+ * dictionary
+ *コトバンク 英和
+ * @param word
+ * @param callback
+ */
+model.getKotobank = function(word, callback) {
+    var API,isWordPage = false;
+    if (/^http:\/\/kotobank\.jp\/ejword\//.test(word)) {
+        API = word;
+        isWordPage = true;// 単語の解説ページだと構造が違う
+    } else {
+        API = "http://kotobank.jp/ejsearch/result?q=" + word + "&t=2";
+    }
+    var xhr = http.request({
+        method: (isWordPage) ? "post" : "get",
+        url: API,
+        events: {
+            // リダイレクト
+            redirect : function() {
+                model.getKotobank(this.response.headers.location, view.showResult);
+                return true;
+            },
+            response: function() {
+                var res = this.response;
+                if (res.status == 200) {
+                    var reshtml = new LooseXML(res);
+                    var parseHTML;
+                    if (isWordPage) {
+                        log("EJdoc");
+                        parseHTML = reshtml.$0('#contents//div[@class="EJdoc"]');
+                    } else {
+                        log("EJunitList");
+                        parseHTML = reshtml.getElementById("EJunitList");
+                    }
+                    log(parseHTML.toString());
+                    callback(parseHTML.toString());
+                } else {
+                    // callback(res.statusText);
+                }
+            }
+        }
+    }).send();
+}
+
+/**
+ * dictionary
+ * http://www.alc.co.jp/
  * @param word
  * @param callback
  */
@@ -439,13 +491,36 @@ view.settings = {
                     height: 20,
                     width:100
                 },
+                // action.dictionaryService
+                dictionaryServiceLabel : {
+                    noHideSel: true,
+                    type: Static,
+                    text: "和英辞書サービス:",
+                    wantReturn: true,
+                    top: 80,
+                    left: 20,
+                    height: 24,
+                    width:100
+                },
+                dictionaryService:{
+                    type:ComboBox,
+                    isDropDownList:true,
+                    items:["kotobank"],
+                    droppedCount:5,
+                    hasVScroll:true,
+                    bottom:0,
+                    top:80,
+                    left:120,
+                    width:128,
+                    height:48
+                },
                 // action.translateService
                 translateServiceLabel : {
                     noHideSel: true,
                     type: Static,
                     text: "翻訳するサービス:",
                     wantReturn: true,
-                    top: 80,
+                    top: 110,
                     left: 20,
                     height: 24,
                     width:100
@@ -457,7 +532,7 @@ view.settings = {
                     droppedCount:5,
                     hasVScroll:true,
                     bottom:0,
-                    top:80,
+                    top:110,
                     left:120,
                     width:128,
                     height:48
@@ -467,7 +542,7 @@ view.settings = {
                     type: Static,
                     text: "ポップアップの\n消失時間(ミリ秒):",
                     wantReturn: true,
-                    top: 110,
+                    top: 140,
                     left: 20,
                     height: 24,
                     width:100
@@ -476,7 +551,7 @@ view.settings = {
                     type: Edit,
                     text: setting.hideDalayTime,
                     wantReturn: true,
-                    top: 110,
+                    top: 140,
                     left: 120,
                     height: 20,
                     width:100
@@ -560,6 +635,8 @@ view.showResult = function(str) {
                 o.Cancel = true;
                 if (/^http:\/\/eow\.alc\.co\.jp/.test(o.URL)) {
                     model.getALC(o.URL, view.showResult);
+                } else if (/^http:\/\/kotobank\.jp\//.test(o.URL)) {
+                    model.getKotobank(o.URL, view.showResult);
                 } else {
                     win.ie.invoke('navigate', o.URL);
                 }
@@ -575,7 +652,7 @@ view.translateText = function(str) {
     var win = view.popup.getWindow();
     // 画面内でのスクロールを初期化する意味を込めて
     win.ie.update(model.createViewHTML("ロード中…"));
-    controll.showWindow(win);
+    controll.showWindow(win).hideWindowDelay(5000);
     if (view.isWord(str)) {
         model.getALC(str, view.showResult); // 英単語翻訳
     } else {
@@ -610,6 +687,7 @@ setting.setDefault = function() {
     var action = setting.action || {};
     setting.shortcutkey = (action.shortcut) ? action.shortcut : 'Shift*2'
     setting.isClipboard = (action.isClipboard) ? action.isClipboard : false;
+    setting.dictionaryService = (action.dictionaryService) ? action.dictionaryService : "Kotobank";
     setting.translateService = (action.translateService) ? action.translateService : "Google";
     setting.hideDalayTime = (action.hideDalayTime) ? action.hideDalayTime : 5000;
     if (setting.shortcutkey) {
