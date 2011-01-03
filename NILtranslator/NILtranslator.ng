@@ -203,7 +203,7 @@ model.getExcite = function(str, callback) {
  * @param callback
  */
 model.getALC = function (word, callback) {
-    var API = (/^http/.test(word)) ? word : "http://eow.alc.co.jp/eow/sp/" + word + "/UTF-8/";
+    var API = (/^http/.test(word)) ? word : "http://eow.alc.co.jp/eow/sp/" + view.encodePlus(word) + "/UTF-8/";
     var xhr = http.request({
         method: "get",
         url: API,
