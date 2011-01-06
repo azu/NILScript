@@ -28,6 +28,7 @@ var Hotstrokes = require('Hotstrokes').Hotstrokes;
 var Mouse = require('Mouse').Mouse;
 var Display = require('Window').Display;
 var http = new require("HTTP").HTTP();
+var LooseXML = require('LooseXML').HTML;
 use('Window', 'ATL', 'HTTPD');
 // MVC的に作りたい
 /*
@@ -190,6 +191,26 @@ model.getExcite = function(str, callback) {
                     } else {
                         alert("No matches found!");
                     }
+                } else {
+                    // callback(res.statusText);
+                }
+            }
+        }
+    }).send();
+}
+model.getKingsoft = function(word, callback) {
+    log(word);
+    var API = (/^http/.test(word)) ? word : "http://dic.kingsoft.jp/" + word + "/%E5%85%A8%E3%81%A6%E3%81%AE%E8%BE%9E%E6%9B%B8";
+    var xhr = http.request({
+        method: "get",
+        url: API,
+        events: {
+            response: function() {
+                var res = this.response;
+                if (res.status == 200) {
+                    var reshtml = new LooseXML(res),
+                            parseHTML = reshtml.getElementById("content-left");
+                    callback(parseHTML.toString());
                 } else {
                     // callback(res.statusText);
                 }
@@ -576,7 +597,7 @@ view.translateText = function(str) {
     win.ie.update(model.createViewHTML("ロード中…"));
     controll.showWindow(win);
     if (view.isWord(str)) {
-        model.getALC(str, view.showResult); // 英単語翻訳
+        model.getKingsoft(str, view.showResult); // 英単語翻訳
     } else {
         var translateByService = {
             "Google" : model.getGoogleTranslator,
