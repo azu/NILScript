@@ -1,0 +1,70 @@
+// ==NILScript==
+// @name folder_breaker
+// @namespace http://efcl.info/
+// @description 渡したフォルダを分解する
+// @author azu
+// @homepage http://efcl.info/
+// ==/NILScript==
+/*フォルダAを渡すと
+    └フォルダA[DIR]
+     ├fileC
+     └fileD
+下のようにフォルダAを分解して中身を元々フォルダAのあった位置に置く。(フォルダAは削除)
+    ├fileC
+    └fileD
+*/
+(function() {
+    var arg = Main.arguments[2]; // 引数
+    if (arg) {
+        var result = [];
+        for (var i = 2, l = Main.arguments.length; i < l; i++) {
+            var arc = new Directory(Main.arguments[i]);
+            if (arc.attributes.directory) {
+                // println(JSON.stringify(arc));
+                result.push(arc.path)
+            }
+        }
+        breakFolder(result);
+    } else {
+        // 引数なしならGUI
+        lauchWindow();
+    }
+})();
+function lauchWindow() {
+    with(require('Window')) {
+        var w = Window.create({
+            title: "分解するフォルダをD&D",
+            top: 250,
+            left: 250,
+            width: 350,
+            height: 350,
+            hasBorder: false,
+            acceptFiles: true,
+            events: {
+                dropFiles: function(o) {
+                    var result = [];
+                    for (var i = 0, l = o.files.length; i < l; i++) {
+                        var arc = o.files[i];
+                        if (arc.attributes.directory) {
+                            result.push(arc.path)
+                        }
+                    }
+                    breakFolder(result);
+                }
+            },
+        }).show();
+    }
+}
+function breakFolder(ary) {
+    for (var i = 0, l = ary.length; i < l; i++) {
+        var dir = new Directory(ary[i]);
+        if (dir.exists) {
+            var d = null;
+            for (d in dir.children) {
+                d.move(dir.parent);
+            }
+            // ファイルを移動し終わったらdelete
+            dir.remove();
+        }
+    }
+}
