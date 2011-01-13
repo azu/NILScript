@@ -1,0 +1,48 @@
+// ==UserScript==
+// @name flatten_out_dir
+// @namespace http://efcl.info/
+// @description D&Dしたディレクトリ以下をフラットにする。
+// @author azu
+// @homepage http://efcl.info/
+// @twitter https://twitter.com/azu_re
+// ==/UserScript==
+/*
+    フォルダ(1)内のフォルダ(2)の中身をフォルダ(1)に移動させて、フォルダ(2)を削除
+    フォルダ
+    ├fileA
+    ├fileB
+    └フォルダ[DIR]
+     ├fileC
+     └fileD
+が
+    フォルダ
+    ├fileA
+    ├fileB
+    ├fileC
+    └fileD
+になる
+*/
+var arg = Main.arguments[2]; // 引数
+if (arg) {
+    for (var i = 2, l = Main.arguments.length; i < l; i++) {
+        var dir = new Directory(Main.arguments[i]);
+        if (dir.exists) {
+            var d = null;
+            for (d in dir.children) {
+                // alert(d.name +" "+ d.attributes.directory);
+                if (d.attributes.directory) { // dir.attributes.directoryでフォルダならtrue
+                    var d_1 = null;
+                    for (d_1 in d.children) { // d_1 はフォルダのフォルダ
+                        // var d_1=new File(d_1); 必要ない
+                        d_1.move(dir);
+                    }
+                    // ファイルを移動し終わったらdelete
+                    d.remove();
+                }
+            }
+        } else {
+            continue;
+            // println(dir.path+" is not exist");
+        }
+    }
+}
