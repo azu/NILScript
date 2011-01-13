@@ -1,0 +1,230 @@
+// ==NILScript==
+// @name newNILScriptDialog
+// @namespace http://efcl.info/
+// @description NILScriptを新規作成時にデフォルト値を入れたものを作る
+// @author azu
+// @homepage http://efcl.info/
+// @twitter https://twitter.com/azu_re
+// ==/NILScript==
+var editorPath = "C:\Program Files\JetBrains\WebStorm\bin\WebStorm.exe";//開くエディタのパス
+// Greasemonkeyの新規作成ダイアログみたいなもの
+var loadData = pref("NILScriptDialog.json", 1).loadJSON();
+with (require('Window')) {
+    Window.create({
+        title: '新規スクリプト作成',
+        top: 200,
+        left: 300,
+        width: 450,
+        height: 400,
+        hasTickFrame:false,// リサイズできなくする
+        events: {
+            dropFiles: function(o) {
+                this.edit.text = o.files[0].load();
+            }
+        },
+        children: {
+            // 20-60
+            scriptNameLabel: {
+                noHideSel: true,
+                type: Static,
+                text: "スクリプト名*",
+                wantReturn: true,
+                top: 20,
+                left: 5,
+            },
+            scriptName: {
+                noHideSel: true,
+                type: Edit,
+                text: "",
+                wantReturn: true,
+                top: 40,
+                left: 10,
+                height: 20,
+                width: 400,
+            },
+            // 70-110
+            nameSpaceLabel: {
+                noHideSel: true,
+                type: Static,
+                text: "名前空間(所持してるURLやメールアドレスなど)",
+                wantReturn: true,
+                top: 70,
+                left: 5,
+            },
+            nameSpace: {
+                noHideSel: true,
+                type: Edit,
+                text: (loadData && loadData.nameSpace) ? loadData.nameSpace : "",
+                wantReturn: true,
+                top: 90,
+                left: 10,
+                height: 20,
+                width: 400,
+            },
+            // 120-160
+            descriptionLabel: {
+                noHideSel: true,
+                type: Static,
+                text: "説明文",
+                wantReturn: true,
+                top: 120,
+                left: 5,
+            },
+            description: {
+                noHideSel: true,
+                type: Edit,
+                text: "",
+                wantReturn: true,
+                top: 140,
+                left: 10,
+                height: 20,
+                width: 400,
+            },
+            // 170-210
+            authorLabel: {
+                noHideSel: true,
+                type: Static,
+                text: "制作者名",
+                wantReturn: true,
+                top: 170,
+                left: 5,
+            },
+            author: {
+                noHideSel: true,
+                type: Edit,
+                text: (loadData && loadData.author) ? loadData.author : "",
+                wantReturn: true,
+                top: 190,
+                left: 10,
+                height: 20,
+                width: 400,
+            },
+            // 220-260
+            homepageLabel: {
+                noHideSel: true,
+                type: Static,
+                text: "ホームページ",
+                wantReturn: true,
+                top: 220,
+                left: 5,
+            },
+            homepage: {
+                noHideSel: true,
+                type: Edit,
+                text: (loadData && loadData.homepage) ? loadData.homepage : "",
+                wantReturn: true,
+                top: 240,
+                left: 10,
+                height: 20,
+                width: 400,
+            },
+            // 270-310
+            savePathLabel: {
+                noHideSel: true,
+                type: Static,
+                text: "スクリプト保存ディレクトリ(未記入ならこのファイルが置かれているディレクトリ",
+                wantReturn: true,
+                top: 270,
+                left: 5,
+            },
+            savePath: {
+                noHideSel: true,
+                type: Edit,
+                text: (loadData && loadData.savePath) ? loadData.savePath : "",
+                wantReturn: true,
+                top: 290,
+                left: 10,
+                height: 20,
+                width: 400,
+            },
+
+            // ボタン
+            execute:{
+                type:Button,
+                text: "作成",
+                height:24,
+                width:64,
+                right:80,
+                bottom:8,
+                events:{
+                    click:function(o) {
+                        try {
+                            var parts = this.parent;
+                            if (!parts.scriptName.text) {
+                                alert("スクリプト名は必須です")
+                            } else {
+                                var data = {
+                                    scriptName  : parts.scriptName.text,
+                                    nameSpace   : parts.nameSpace.text,
+                                    description : parts.description.text,
+                                    author      : parts.author.text,
+                                    homepage    : parts.homepage.text,
+                                    savePath    : parts.savePath.text,
+                                };
+                                arrangeInput(data);
+                                pref("NILScriptDialog.json", 1).saveJSON(data);
+                            }
+                        } catch(e) {
+                            println(e);
+                        }
+                    },
+                },
+            },
+            quit:{
+                type:Button,
+                text: "キャンセル",
+                height:24,
+                width:64,
+                right:8,
+                bottom:8,
+                events:{
+                    click:function() {
+                        this.parent.close(true);
+                    },
+                },
+            },
+        },
+    }).show()
+}
+function arrangeInput(obj) {
+    var temp = [];
+    temp.push("// ==NILScript==");
+    temp.push("// @name " + obj.scriptName);
+    (obj.nameSpace) ? temp.push("// @namespace " + obj.nameSpace) : "";
+    (obj.description) ? temp.push("// @description " + obj.description) : "";
+    (obj.author) ? temp.push("// @author " + obj.author) : "";
+    (obj.homepage) ? temp.push("// @homepage " + obj.homepage) : ""
+    temp.push("// ==/NILScript==");
+    var filePath = obj.savePath;
+    if (filePath) {
+        filePath = (filePath[filePath.length - 1] == "\\") ? filePath : filePath + "\\";//ディレクトリにする
+    } else {
+        filePath = Main.scriptDirectory + '\\';
+    }
+    filePath = escapePath(filePath) + obj.scriptName.replace(/\s/g, "_") + ".ng";//エスケープ
+    newFile(filePath, temp.join("\r\n"));
+    openEditor(filePath)
+}
+// ファイルパスにcontentを入れたファイルを作成する。
+// pathはファイル名のみだとスクリプトと同じ場所に作成する
+function newFile(path, content) {
+    if (path.indexOf("\\") == -1) {
+        var fileNmae = "test.ng";
+        var path = '"' + Main.scriptDirectory + '\\' + fileNmae + '"';
+    }
+    // return fileStreamOperationMixin
+    var file = (new File(path));
+    // 中身があっても消える
+    file.update(content, "UTF-8");
+
+}
+function escapePath(path) {
+    return path.replace("\\", "\\\\");
+}
+function openEditor(file) {
+    var editor = (editorPath) ? editorPath : null // 開くエディタパス
+    if (editor) {
+        editor = '"' + escapePath(editor) + '"';
+        Process.create(editor + ' "' + file + '"');
+    }
+}

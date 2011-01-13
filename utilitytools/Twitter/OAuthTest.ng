@@ -1,0 +1,28 @@
+// ==NILScript==
+// @name OAuthTest
+// @namespace http://efcl.info/
+// @description OAuth.ngのテスト
+// @author azu
+// @homepage http://efcl.info/
+// ==/NILScript==
+// OAuth.ngを読み込む
+include("OAuth.ng");
+// Twitter クライアント設定
+var clientInfo = {
+    name: 'NILScript',
+    consumerKey: 'T0Wsr0pjQRqV0Xi56g0EJA',
+    consumerSecret: '3BV9UhiJ97WcW0Phull8NQbnErPLlT3fSDoxHIcJ0Dg'
+}
+// TwitterOauthを呼び出す
+var tw = new TwitterOauth(clientInfo);
+if(tw.isAuthorize()){
+    var query = {
+        q : "oauth",
+        per_page : 5
+    };
+    tw.get("http://api.twitter.com/1/users/search.json" , query ,function(res){
+      println(res);
+    })
+}else{ // まずはリクエストトークン
+    tw.getRequestToken();
+}
