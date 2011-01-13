@@ -1,7 +1,0 @@
-エクスプローラー上で使用するngスクリプトです。
-主にファイルパスやディレクトリパスを渡して使うモノが多いです。
-
-[flatten_out_dir.ng]	D&Dしたディレクトリ以下をフラットにする [azu]
-[folder_breaker.ng] 	渡したフォルダを分解する [azu]
-[remove_less_FolderSize.ng] 	一定以下のフォルダサイズなら削除 [azu]
-[tree_command.ng]	treeコマンド的にディレクトリ構造を文字で表してクリップボードにコピー [azu]
