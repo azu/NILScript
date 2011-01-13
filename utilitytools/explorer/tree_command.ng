@@ -1,0 +1,59 @@
+/*
+ tree_command コマンド的にディレクトリ構造を文字で表してクリップボードにコピー
+ tree.ng [ディレクトリパス,コピーするディレクトリの深さ]
+ 第一引数 dirPath 
+ 第二引数 depth
+ 1ならそのディレクトリ直下のみ
+ 2なら一つ下のフォルダまで
+ 3...
+ -実行例
+ explorer
+├flatten_out_dir.ng
+├folder_breaker.ng
+├remove_less_FolderSize.ng
+└tree_command.ng
+ */
+var dir = new Directory(Main.arguments[2] || cwd());// なければカレントディレクトリ
+var limitDepth = (Main.arguments[3] || 2);
+if (dir.exists) {
+    var result = [],cnt = {};
+    result.push(dir.name);
+    getDirTree(dir)
+} else {
+    println(dir.path + " is not exist");
+}
+// クリップボードへ入れる
+require("Clipboard").Clipboard.text = result.join("\n");
+
+function getDirTree(dir, index) {
+    if (!index) {
+        var index = 0;
+    }
+    if (index >= limitDepth) {
+        index = 0;
+        return;
+    }
+    var i = 0;
+    var branchSign = (index == 0) ? "├" : "│" + Array(3 * index).join(" ") + "├";
+    var limbSign = (index == 0) ? "└" : "│" + Array(3 * index).join(" ") + "└";
+    var brachDir = (index == 0) ? "" : "│" + Array(3 * index).join(" ") + "├";
+    // dir.find("*") dir.children
+    cnt[dir.path] = dir.children.count();
+    for (var d in dir.children) {
+        i++;
+        if (d.size) {
+            if (cnt[dir.path] == i) {
+                result.push(limbSign + d.name);
+            } else {
+                result.push(branchSign + d.name);
+            }
+        } else {
+            if (cnt[dir.path] == i) {
+                result.push(limbSign + d.name + "[DIR]");
+            } else {
+                result.push(branchSign + d.name + "[DIR]");
+            }
+            getDirTree(d, 1 + index);
+        }
+    }
+}
