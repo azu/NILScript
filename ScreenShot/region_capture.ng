@@ -1,0 +1,122 @@
+// ==NILScript==
+// @name Region capture
+// @namespace http://efcl.info/
+// @description 選択範囲の矩形キャプチャを作成
+// @author azu
+// @homepage http://efcl.info/
+// ==/NILScript==
+/*
+手法
+    画面スクリーンショットを取る
+    選択範囲を決めるウィンドウを作る
+    自由な位置からのドラッグで選択範囲ウィンドウのサイズを変更
+    選択範囲ウィンドウをダブルクリックで保存処理などを開始して終わり
+ */
+Main.singletonize(0); // 重複実行を避ける
+Main.process.priority = Process.priority.high;
+use('Window', 'Image', 'Mouse');
+var Display = require('Window').Display;
+var Clipboard = require('Clipboard').Clipboard;
+var imgSave = Main.scriptDirectory.file('resion.png');// 保存
+var capture = {};
+(function(callback) {
+    capture.selection = {};
+    capture.callback = callback;
+    capture.img = Image.capture(null);// まずは画面スクリーンショットを取る
+    capture.win = Window.create({
+        graphics:capture.img,
+        isPopupWindow:true,hasTickFrame:false,hasBorder:false,hasDlgFrame:false,
+        toolWindow:true,
+        topmost:true,
+        left:0,top:0,
+        width:Display.width,height:Display.height
+    }).show()
+    capture.resionWin = Window.create({
+        title:'選択範囲',
+        isPopupWindow:true,hasTickFrame:false,hasBorder:false,hasDlgFrame:false,
+        toolWindow:true,
+        topmost:true,
+        transparentColor:0x000000,
+        alpha:196,
+        width:0,height:0,
+        left:0,top:0
+    });
+    // 右クリックで終了
+    Mouse.observe("rbuttonUp", function() {
+        // リソースの解放してから終了しないとエラーになる。
+        clearResource();
+        Main.exit();
+    })
+    // 左クリックで選択開始
+    capture.win.observe("lbuttonDown", function(evt) {
+        var start = {
+            x : evt.x,
+            y : evt.y
+        }
+        capture.selection.start = start;
+        // イベントリスナー処理を非同期に作る http://javascript.g.hatena.ne.jp/edvakf/20100204/1265312155
+        var moveListner = function(moveevt) {
+            // ハンドラー内でイベントリスナーを削除する
+            Mouse.unobserve("move", moveListner);
+            var timer = new Timer((function() {
+                var res = getResionRect(capture.selection.start, {
+                    x : moveevt.x,
+                    y : moveevt.y
+                });
+                capture.resionWin.moveTo(res.x, res.y, res.width, res.height, true).show(true);
+                Mouse.observe("move", moveListner);
+            }), 10, true).run();
+        }
+        Mouse.observe("move", moveListner);
+        capture.win.observe("lbuttonUp", function(lupevt) {
+            Mouse.unobserve("move", moveListner);
+            capture.win.unobserve(lupevt.event.type, arguments.callee);
+            capture.selection.end = {
+                x : lupevt.x,
+                y : lupevt.y
+            };
+            if (!capture.resionWin.isObserved("lbuttonDoubleClick")) {
+                capture.resionWin.observe("lbuttonDoubleClick", function(evt) {
+                    finishTrim(getResionRect(capture.selection.start, capture.selection.end));
+                });
+            }
+
+        });
+    });
+    // 選択範囲のx,y,width,heightのオブジェクトを返す
+    function getResionRect(start, end) {
+        var width = end.x - start.x,
+                height = end.y - start.y;
+        var res = {
+            x : (start.x > end.x) ? end.x : start.x,
+            y : (start.y > end.y) ? end.y : start.y,
+            width : (width >= 0) ? width : -width,
+            height : (height >= 0) ? height : -height
+        };
+        return res;
+    }
+
+    function clearResource() {
+        capture.img.free();
+        capture.resionWin.close();
+        capture.win.close();
+    }
+    // 終了処理
+    function finishTrim(res) {
+        var cropedImg = capture.img.getCropped(res.x, res.y, res.width, res.height);
+        //Clipboard.image = cropedImg;
+        cropedImg.save(imgSave);
+        cropedImg.free();
+        clearResource();
+        capture.callback && capture.callback()
+    }
+
+    function resionlog(res) {
+        println(<>
+        x = {res.x}
+        y = {res.y}
+        width = {res.width}
+        height = {res.height}
+        </>);
+    }
+})();
