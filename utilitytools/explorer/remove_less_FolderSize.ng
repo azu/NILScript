@@ -1,0 +1,64 @@
+// ==NILScript==
+// @name remove less FolderSize
+// @namespace http://efcl.info/
+// @description 一定以下のフォルダサイズなら削除
+// @author azu
+// @homepage http://efcl.info/
+// ==/NILScript==
+
+(function() {
+    var arg = Main.arguments[2]; // 引数
+    if (arg) {
+        var result = [];
+        for (var i = 2, l = Main.arguments.length; i < l; i++) {
+            var arc = new Directory(Main.arguments[i]);
+            if (arc.attributes.directory) {
+                // println(JSON.stringify(arc));
+                result.push(arc.path)
+            }
+        }
+        removeFolder(result);
+    } else {
+        // 引数なしならGUI
+        lauchWindow();
+    }
+})();
+function lauchWindow() {
+    with (require('Window')) {
+        var w = Window.create({
+            title: "D&Dしたフォルダ以下を確認、消去",
+            top: 250,
+            left: 250,
+            width: 350,
+            height: 350,
+            hasBorder: false,
+            acceptFiles: true,
+            events: {
+                dropFiles: function(o) {
+                    var result = [];
+                    for (var i = 0, l = o.files.length; i < l; i++) {
+                        var arc = o.files[i];
+                        if (arc.attributes.directory) {
+                            result.push(arc.path)
+                        }
+                    }
+                    removeFolder(result);
+                }
+            },
+        }).show();
+    }
+}
+
+function removeFolder(ary) {
+    for (var i = 0, l = ary.length; i < l; i++) {
+        var dir = new Directory(ary[i]);
+        println(dir.path);
+        if (dir.exists) {
+            for (var d in dir.children) {
+                if (d.attributes.directory) {// フォルダに対して処理
+                    println(d.name + " : " + d.totalSpace);
+                }
+            }
+        }
+    }
+}
