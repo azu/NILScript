@@ -1,0 +1,15 @@
+// ==NILScript==
+// @name active window screenshot
+// @namespace http://efcl.info/
+// @description アクティブウィンドウのスクリーンショットを表示
+// @author azu
+// @homepage http://efcl.info/
+// @twitter https://twitter.com/azu_re
+// ==/NILScript==
+use("Window", "Image");
+var img = Image.capture(Window.active, true);
+var w = Window.create({
+    title : "アクティブウィンドウのスクリーンショット",
+    width:img.width,height:img.height,
+    graphics:img
+}).moveToCenter().show();
