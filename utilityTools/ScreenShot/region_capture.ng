@@ -47,9 +47,33 @@ var capture = {};
         // リソースの解放してから終了しないとエラーになる。
         clearResource();
         Main.exit();
-    })
+    });
+    // クロス線を描画
+    var timer = new Timer((function() {
+        var point = {
+            x : Mouse.x,
+            y : Mouse.y
+        };
+        var cloneImg = capture.img.clone();
+        cloneImg.drawLine(point.x, 0, point.x, Display.height, "black", false);
+        cloneImg.drawLine(0, point.y, Display.width, point.y, "black", false);
+        cloneImg.drawTo(capture.win);
+    }), 100, true).run();
+
+    var crosslinedraw = function(evt) {
+        var point = {
+            x : evt.x,
+            y : evt.y
+        };
+        var cloneImg = capture.img.clone();
+        cloneImg.drawLine(point.x, 0, point.x, Display.height, "black", false);
+        cloneImg.drawLine(0, point.y, Display.width, point.y, "black", false);
+        cloneImg.drawTo(capture.win);
+    }
+    Mouse.observe("move", crosslinedraw);
     // 左クリックで選択開始
     capture.win.observe("lbuttonDown", function(evt) {
+        Mouse.unobserve("move", crosslinedraw);
         var start = {
             x : evt.x,
             y : evt.y
@@ -83,13 +107,15 @@ var capture = {};
                 y : lupevt.y
             };
             var result = getResionRect(capture.selection.start, capture.selection.end);
+            var cloneImg = capture.img.clone();
+            cloneImg.drawRect(result.x, result.y, result.width, result.height, "red", false);
+            cloneImg.drawTo(capture.win);
             capture.resionWin.moveTo(result.x, result.y, result.width, result.height, true).show(true);
             if (!capture.resionWin.isObserved("lbuttonDoubleClick")) {
                 capture.resionWin.observe("lbuttonDoubleClick", function(evt) {
                     finishTrim(result);
                 });
             }
-
         });
     });
     // 選択範囲のx,y,width,heightのオブジェクトを返す
@@ -119,6 +145,10 @@ var capture = {};
         cropedImg.free();
         clearResource();
         capture.callback && capture.callback()
+    }
+
+    function log(m) {
+        println.apply(this, arguments);
     }
 
     function resionlog(res) {
