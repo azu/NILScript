@@ -63,8 +63,8 @@ var capture = {};
                     x : moveevt.x,
                     y : moveevt.y
                 });
-                var cloneImg = capture.img.clone()
-                cloneImg.drawRect(res.x, res.y, res.width, res.height, "black", false);
+                var cloneImg = capture.img.clone();
+                cloneImg.drawRect(res.x, res.y, res.width, res.height, "red", false);
                 cloneImg.drawTo(capture.win);
                 if (!moveListner.isFinshed) {
                     Mouse.observe("move", moveListner);
