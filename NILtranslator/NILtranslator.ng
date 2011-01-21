@@ -597,7 +597,7 @@ view.translateText = function(str) {
     win.ie.update(model.createViewHTML("ロード中…"));
     controll.showWindow(win);
     if (view.isWord(str)) {
-        model.getKingsoft(str, view.showResult); // 英単語翻訳
+        model.getALC(str, view.showResult); // 英単語翻訳
     } else {
         var translateByService = {
             "Google" : model.getGoogleTranslator,
@@ -606,6 +606,7 @@ view.translateText = function(str) {
         translateByService(str, view.showResult);// 文章
     }
 }
+
 /**
  * 単語ならtrue , 文章ならfalse
  * @param str

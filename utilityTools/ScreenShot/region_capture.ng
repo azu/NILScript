@@ -6,11 +6,11 @@
 // @homepage http://efcl.info/
 // ==/NILScript==
 /*
-手法
-    画面スクリーンショットを取る
-    選択範囲を決めるウィンドウを作る
-    自由な位置からのドラッグで選択範囲ウィンドウのサイズを変更
-    選択範囲ウィンドウをダブルクリックで保存処理などを開始して終わり
+ 手法
+ 画面スクリーンショットを取る
+ 選択範囲を決めるウィンドウを作る
+ 自由な位置からのドラッグで選択範囲ウィンドウのサイズを変更
+ 選択範囲ウィンドウをダブルクリックで保存処理などを開始して終わり
  */
 Main.singletonize(0); // 重複実行を避ける
 Main.process.priority = Process.priority.high;
@@ -63,21 +63,29 @@ var capture = {};
                     x : moveevt.x,
                     y : moveevt.y
                 });
-                capture.resionWin.moveTo(res.x, res.y, res.width, res.height, true).show(true);
-                Mouse.observe("move", moveListner);
+                var cloneImg = capture.img.clone()
+                cloneImg.drawRect(res.x, res.y, res.width, res.height, "black", false);
+                cloneImg.drawTo(capture.win);
+                if (!moveListner.isFinshed) {
+                    Mouse.observe("move", moveListner);
+                }
             }), 10, true).run();
         }
+        moveListner.isFinshed = false;
         Mouse.observe("move", moveListner);
         capture.win.observe("lbuttonUp", function(lupevt) {
             Mouse.unobserve("move", moveListner);
+            moveListner.isFinshed = true;
             capture.win.unobserve(lupevt.event.type, arguments.callee);
             capture.selection.end = {
                 x : lupevt.x,
                 y : lupevt.y
             };
+            var result = getResionRect(capture.selection.start, capture.selection.end);
+            capture.resionWin.moveTo(result.x, result.y, result.width, result.height, true).show(true);
             if (!capture.resionWin.isObserved("lbuttonDoubleClick")) {
                 capture.resionWin.observe("lbuttonDoubleClick", function(evt) {
-                    finishTrim(getResionRect(capture.selection.start, capture.selection.end));
+                    finishTrim(result);
                 });
             }
 
@@ -101,6 +109,7 @@ var capture = {};
         capture.resionWin.close();
         capture.win.close();
     }
+
     // 終了処理
     function finishTrim(res) {
         var cropedImg = capture.img.getCropped(res.x, res.y, res.width, res.height);
