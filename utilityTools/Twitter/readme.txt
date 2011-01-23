@@ -4,6 +4,8 @@ TwitterとOAuth関係のスクリプト
 
 * OAuth.ng
     NILScriptからOAuthを扱うためのライブラリ
+    include("OAuth.ng");して使用する。
+    clientInfoは自分のを使用するようにして下さい。
 * Twitter_friend_search.ng
     Twitterで自分がフォローしてる人からユーザー名を検索してコピーするスクリプトです。
     初回の起動時はOAuth認証します。(NILScriptで立てた簡易サーバをリダイレクト先にしている)
