@@ -11,6 +11,11 @@
 // OAuth for Greasemonkeyのラッパーライブラリ | Web scratch
 // http://efcl.info/2010/0610/res1721/
 // sample http://gist.github.com/526378
+/*
+  OAuth.js
+  SHA-1.js
+  TwitterOauth for NILScript
+*/
 
 /*
  * Copyright 2008 Netflix, Inc.
@@ -85,8 +90,8 @@
    Another option is to call OAuth.correctTimestamp with a Unix timestamp.
  */
 
-
 var OAuth; if (OAuth == null) OAuth = {};
+
 OAuth.setProperties = function setProperties(into, from) {
     if (into != null && from != null) {
         for (var key in from) {
@@ -559,8 +564,10 @@ OAuth.SignatureMethod.registerMethodClass(["HMAC-SHA1", "HMAC-SHA1-Accessor"],
         }
     ));
 
-OAuth.correctTimestamp(new Date());
-
+try {
+    OAuth.correctTimestampFromSrc();
+} catch(e) {
+}
 
 /*
  * A JavaScript implementation of the Secure Hash Algorithm, SHA-1, as defined
@@ -826,7 +833,7 @@ TwitterOauth.prototype = {
     getRequestToken : function(callback){
         var message = {
           method: "GET",
-          action: "https://twitter.com/oauth/request_token",
+          action: "https://api.twitter.com/oauth/request_token",
           parameters: {
             oauth_signature_method: "HMAC-SHA1",
             oauth_consumer_key: this.accessor.consumerKey
@@ -848,10 +855,10 @@ TwitterOauth.prototype = {
                         self.request.token = parameter["oauth_token"];
                         self.request.tokenSecret = parameter["oauth_token_secret"];
                         // ブラウザで開く
-                        self.openBrowser("https://twitter.com/oauth/authorize?oauth_token="+self.request.token);
+                        self.openBrowser("https://api.twitter.com/oauth/authorize?oauth_token="+self.request.token);
                         // requestURLを引数にcallback
                         if(callback){
-                            callback("https://twitter.com/oauth/authorize?oauth_token="+self.request.token);
+                            callback("https://api.twitter.com/oauth/authorize?oauth_token="+self.request.token);
                         }
                      }else{
                         alert(d.statusText);
@@ -867,7 +874,7 @@ TwitterOauth.prototype = {
     getAccessToken : function(oauth_token ,callback) {
         var message = {
           method: "GET",
-          action: "https://twitter.com/oauth/access_token",
+          action: "https://api.twitter.com/oauth/access_token",
           parameters: {
             oauth_signature_method: "HMAC-SHA1",
             oauth_consumer_key: this.accessor.consumerKey,
@@ -1066,4 +1073,3 @@ TwitterOauth.prototype = {
    }
 
 };
-
