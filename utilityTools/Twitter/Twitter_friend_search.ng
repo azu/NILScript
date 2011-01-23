@@ -4,7 +4,7 @@ include("OAuth.ng");
 var clientInfo = {
     name: 'NILScript',
     consumerKey: 'T0Wsr0pjQRqV0Xi56g0EJA',
-    consumerSecret: '3BV9UhiJ97WcW0Phull8NQbnErPLlT3fSDoxHIcJ0Dg',
+    consumerSecret: '3BV9UhiJ97WcW0Phull8NQbnErPLlT3fSDoxHIcJ0Dg'
 }
 // TwitterOauthにクライアント情報を渡してnewする(必須)
 var tw = new TwitterOauth(clientInfo);
