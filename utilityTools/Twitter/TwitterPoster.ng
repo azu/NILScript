@@ -1,0 +1,35 @@
+// ==NILScript==
+// @name TwitterPoster
+// @namespace http://efcl.info/
+// @description Twitterへ投稿する
+// @author azu
+// @homepage http://efcl.info/
+// @twitter https://twitter.com/azu_re
+// ==/NILScript==
+include("OAuth.ng");
+// Twitter クライアント設定
+var clientInfo = {
+    name: 'ƪ(˘⌣˘)ʃ',
+    consumerKey: '82WkRDUBuUuWHvmPqpzM2A',
+    consumerSecret: 'YeRqZN99I6IO4Gyxn6ZxEkeKoObqVHDcAmyVJMbJqE'
+}
+var arg = Main.arguments[2];
+// TwitterOauthを呼び出す
+var tw = new TwitterOauth(clientInfo);
+if (tw.isAuthorize() && arg) {
+    var text = prompt("Twitterへ投稿", '♪ "' + arg + '"', {
+        multiLine : true,
+        x : 400,
+        y : 400,
+        width : 320,
+        height : 240
+    })
+    if (text) {
+        var content = {status: text.trim(), source: clientInfo.name};
+        tw.post('http://twitter.com/statuses/update.json', content, function() {
+            println(res);
+        });
+    }
+} else { // まずはリクエストトークン
+    tw.getRequestToken();
+}
