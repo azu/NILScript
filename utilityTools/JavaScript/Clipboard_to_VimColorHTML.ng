@@ -1,7 +1,7 @@
 // ==NILScript==
 // @name Clipboard_to_VimColorHTML
 // @namespace http://efcl.info/
-// @description クリップボードのコードをVimColorとのHTMLコードに変換してクリップボードに格納
+// @description クリップボードのコードをVimColorのHTMLコードに変換してクリップボードに格納
 // @author azu
 // @homepage http://efcl.info/
 // @twitter https://twitter.com/azu_re
