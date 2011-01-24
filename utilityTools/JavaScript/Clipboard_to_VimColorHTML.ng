@@ -28,7 +28,7 @@ var xhr1 = http.request({
             if (res.status == 200) {
                 var reshtml = new LooseXML(res);
                 var parseHTML = reshtml.getElementById('html');
-                Clipboard.contents = {html:htmlEntityDecode(parseHTML.content)};
+                Clipboard.text = htmlEntityDecode(parseHTML.content)
             }
         }
     }
