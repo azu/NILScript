@@ -1,0 +1,42 @@
+// ==NILScript==
+// @name Clipboard_to_VimColorHTML
+// @namespace http://efcl.info/
+// @description クリップボードのコードをVimColorとのHTMLコードに変換してクリップボードに格納
+// @author azu
+// @homepage http://efcl.info/
+// @twitter https://twitter.com/azu_re
+// ==/NILScript==
+
+var Clipboard = require('Clipboard').Clipboard;
+var http = new require("HTTP").HTTP();
+var LooseXML = require('LooseXML').HTML;
+// HTTP.txt - http.getTextで書いてあるけどリクエストオブジェクトを指定できる。
+var xhr1 = http.request({
+    method :"POST",
+    url : "http://vimcolor.spiritloose.net/",
+    headers : {
+        'Content-Type': 'application/x-www-form-urlencoded '
+    },
+    body: {
+        'theme' : "hatena",
+        'type' : 'javascript',
+        'code' : Clipboard.text
+    },
+    events : {
+        response:function(res) {
+            var res = this.response;
+            if (res.status == 200) {
+                var reshtml = new LooseXML(res);
+                var parseHTML = reshtml.getElementById('html');
+                Clipboard.contents = {html:htmlEntityDecode(parseHTML.content)};
+            }
+        }
+    }
+}).send();
+
+// HTMLエンティティしたものを戻す
+function htmlEntityDecode(str) {
+    return str.replace(/&(lt|gt|quot|amp);/g, function(_, _1) {
+        return {lt:'<', gt:'>', quot:'"', amp:'&'}[_1];
+    });
+}
