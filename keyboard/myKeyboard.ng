@@ -28,7 +28,7 @@ Main.createNotifyIcon();
 //安定性向上のため推奨
 Main.process.priority = Process.priority.high;
 
-require('Hotstrokes').Hotstrokes.use('Mouse', 'IME').map({
+require('Hotstrokes').Hotstrokes.use('IME').map({
     // 右Shift KFJBでカーソル移動
     "RShift+J":function() {
         this.cancel().reset().send("[down]");
