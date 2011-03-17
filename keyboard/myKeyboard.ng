@@ -1,0 +1,45 @@
+// ==NILScript==
+// @name myKeyboard
+// @namespace http://efcl.info/
+// @description キーバインドの変更など
+// @author azu
+// @homepage http://efcl.info/
+// @twitter https://twitter.com/azu_re
+// ==/NILScript==
+
+Main.observe("exit", function() {
+    println("main thread is correctly terminating")
+});
+/*
+ コンソールウィンドウがコンテキストメニューを表示しているときなどに出力しようとすると、
+ コンテキストメニューが消えて表示を更新できるようになるまで処理がブロックされてしまうので、
+ 割り当て動作中から動作確認などのためにprintln()を呼び出したい場合は、
+ このように非同期化しておくのが望ましい。
+ */
+println = function(s) {
+    (Thread.create(function() {
+        Main.stdout.writeLine(s)
+    }))
+};
+
+//終了操作のためのタスクトレイアイコン
+Main.createNotifyIcon();
+
+//安定性向上のため推奨
+Main.process.priority = Process.priority.high;
+
+require('Hotstrokes').Hotstrokes.use('Mouse', 'IME').map({
+    // 右Shift KFJBでカーソル移動
+    "RShift+J":function() {
+        this.cancel().reset().send("[down]");
+    },
+    "RShift+K":function() {
+        this.cancel().reset().send("[up]");
+    },
+    "RShift+F":function() {
+        this.cancel().reset().send("[right]");
+    },
+    "RShift+B":function() {
+        this.cancel().reset().send("[left]");
+    }
+}).register();
