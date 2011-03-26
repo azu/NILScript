@@ -1,0 +1,37 @@
+// ==NILScript==
+// @name GreasemonkeyToScriptish
+// @namespace http://efcl.info/
+// @description convert pref.js form Greasemonkey to Scriptish
+// @author azu
+// @homepage http://efcl.info/
+// @twitter https://twitter.com/azu_re
+// ==/NILScript==
+
+var config = Main.scriptDirectory.file("prefs.js");
+var replaceGtoS = (function() {
+    var matchReg = /user_pref\("greasemonkey\.scriptvals\.([^"]+)\/([^.]+)\.(.*?)"/i;
+    var namespaceReg = /[:\/]/gi;
+    return function(line) {
+        line = line.replace(matchReg, function(str, namespace, scriptname, property) {
+            if (namespace && scriptname) {
+                scriptname = scriptname.replace(/[\s+]/g, "");
+                namespace = namespace.replace(namespaceReg, "");
+                return 'user_pref("extensions.scriptish.scriptvals.' +
+                        scriptname + "@" + namespace + "." + property + '"';
+            }
+        });
+        result.push(line);
+    }
+})();
+var result = [];
+for (var i in config.lines) {
+    replaceGtoS(i);
+}
+createConfing(result.join("\n"));
+// config.xmlを上書き
+function createConfing(content) {
+    var fileNmae = "new_prefs.js";
+    var path = Main.scriptDirectory + '\\' + fileNmae;
+    var file = (new File(path));
+    file.save(content, "UTF-8")
+}
