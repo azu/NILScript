@@ -10,14 +10,13 @@
 var config = Main.scriptDirectory.file("prefs.js");
 var replaceGtoS = (function() {
     var matchReg = /user_pref\("greasemonkey\.scriptvals\.([^"]+)\/([^.]+)\.(.*?)"/i;
-    var namespaceReg = /[:\/]/gi;
+    var removeReg = /[^\w@\.\-_]+/g; // http://twitter.com/xulapp/statuses/51603058978865153
     return function(line) {
         line = line.replace(matchReg, function(str, namespace, scriptname, property) {
             if (namespace && scriptname) {
-                scriptname = scriptname.replace(/[\s+]/g, "");
-                namespace = namespace.replace(namespaceReg, "");
                 return 'user_pref("extensions.scriptish.scriptvals.' +
-                        scriptname + "@" + namespace + "." + property + '"';
+                        (scriptname + "@" + namespace).replace(removeReg, "")
+                        + "." + property + '"';
             }
         });
         result.push(line);
