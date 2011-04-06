@@ -15,8 +15,9 @@ cs.file = [];
         var param = Main.params[i];
         switch (true) {
             case ("--watch" === param):
+                println("watch");
                 Main.createNotifyIcon();// 変更を監視するため
-                cs.watch = true;
+                cs._optWatch = true;
                 break;
             case /\.coffee$/i.test(param):
                 cs.file.push(param);
@@ -37,7 +38,7 @@ cs.file = [];
             return e;
         }
         createJavaScript(jsfileName, result);
-        if (cs.watch) {
+        if (cs._optWatch) {
             checkModify(file, jsfileName);
         }
     }
