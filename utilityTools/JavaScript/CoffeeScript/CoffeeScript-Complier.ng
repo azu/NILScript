@@ -1,0 +1,66 @@
+// ==NILScript==
+// @name CoffeeScript Complier
+// @namespace http://efcl.info/
+// @description CoffeeScript Compiler by SpiderMonkey
+// @author azu
+// @homepage http://efcl.info/
+// @twitter https://twitter.com/azu_re
+// ==/NILScript==
+
+include("coffee-script.js");
+var cs = {};
+cs.file = [];
+(function() {
+    for (var i = 0,len = Main.params.length; i < len; i++) {
+        var param = Main.params[i];
+        switch (true) {
+            case ("--watch" === param):
+                Main.createNotifyIcon();// 変更を監視するため
+                cs.watch = true;
+                break;
+            case /\.coffee$/i.test(param):
+                cs.file.push(param);
+                compile(param);
+                break;
+            default:
+                break;
+        }
+    }
+    function compile(fileName) {
+        var file = Main.scriptDirectory.file(fileName),
+                jsfileName = fileName.replace(/\.coffee$/i, ".js"),
+                result;
+        try {
+            result = CoffeeScript.compile(file.load())
+        } catch(e) {
+            println("F -- " + e);
+            return e;
+        }
+        createJavaScript(jsfileName, result);
+        if (cs.watch) {
+            checkModify(file, jsfileName);
+        }
+    }
+
+    function createJavaScript(fileName, content) {
+        if (!(fileName && content)) return;
+        var path = Main.scriptDirectory + '\\' + fileName;
+        var file = (new File(path));
+        file.update(content, "UTF-8");
+        println("C -- " + Date.now())
+    }
+
+    function checkModify(file, jsfileName, threshold) {
+        // http://d.hatena.ne.jp/brazil/20110131/1296419283
+        var last = Date.now();
+        var threshold = threshold || 100;// 差の時間
+        file.observe('modify', function(o) {
+            var now = Date.now();
+            if (now - last < threshold) {
+                var result = CoffeeScript.compile(file.load());
+                createJavaScript(jsfileName, result);
+            }
+            last = now;
+        });
+    }
+})()
