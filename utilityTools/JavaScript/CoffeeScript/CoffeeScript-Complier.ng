@@ -9,57 +9,87 @@
 
 include("coffee-script.js");
 var cs = {};
-cs.file = [];
+cs.files = [];//コンパイル対象
+cs.depth = 0;// ディレクトリの深さ
 (function() {
-    for (var i = 0,len = Main.params.length; i < len; i++) {
-        var param = Main.params[i];
-        switch (true) {
-            case ("--watch" === param):
-                println("watch");
-                Main.createNotifyIcon();// 変更を監視するため
-                cs._optWatch = true;
-                break;
-            case /\.coffee$/i.test(param):
-                cs.file.push(param);
-                compile(param);
-                break;
-            default:
-                break;
+    // 対象coffeeファイルをリストに入れる
+    addFile(Main.params);
+    // println("対象ファイル" , cs.files.join("\n"))
+    handleFile();
+    function addFile(params) {
+        var coffeeReg = /\.coffee$/i;
+        println("" + params.toArray);
+        params.toArray && (params = params.toArray());
+        for (var i = 0,len = params.length; i < len; i++) {
+            var param = params[i];
+            switch (true) {
+                case ("--watch" === param):
+                    cs._optWatch = true;
+                    break;
+                case coffeeReg.test(param):
+                    cs.files.push(param);
+                    break;
+                case /\/$/.test(param):
+                    cs.depth++;
+                    if (cs.depth < 3) {
+                        var dir = cwd().directory(param);// Directoryオブジェクト
+                        addFile(dir.children);
+                    }
+                    break;
+                default:
+                    break;
+            }
         }
     }
-    function compile(fileName) {
-        var file = Main.scriptDirectory.file(fileName),
-                jsfileName = fileName.replace(/\.coffee$/i, ".js"),
-                result;
+
+    // 受け取った引数を元に処理
+    function handleFile() {
+        var handleFnStack = [];
+        handleFnStack.push(compileCS);
+        if (cs._optWatch) {
+            Main.createNotifyIcon();// 変更を監視するため
+            handleFnStack.push(checkModify);
+        }
+        // それぞれのFileオブジェクトに処理をする
+        for (var i = 0,len = cs.files.length; i < len; i++) {
+            var File = getFile(cs.files[i]);
+            handleFnStack.forEach(function(fn) {
+                fn(File);
+            })
+        }
+    }
+
+    // パスからファイルオブジェクトを取得
+    function getFile(path) {
+        return cwd().file(path);
+    }
+
+    function compileCS(File) {
+        var result = null;
+        var jsFile = File.changeExtension(".js");// .coffee => .js
         try {
-            result = CoffeeScript.compile(file.load())
+            result = CoffeeScript.compile(File.load())
         } catch(e) {
             println("F -- " + e);
             return e;
         }
-        createJavaScript(jsfileName, result);
-        if (cs._optWatch) {
-            checkModify(file, jsfileName);
-        }
+        createJavaScript(jsFile, result);
     }
 
-    function createJavaScript(fileName, content) {
-        if (!(fileName && content)) return;
-        var path = Main.scriptDirectory + '\\' + fileName;
-        var file = (new File(path));
-        file.update(content, "UTF-8");
-        println("C -- " + Date.now())
+    function createJavaScript(File, content) {
+        if (!(File && content)) return;
+        File.update(content, "UTF-8");
+        println("C -- " + File.name + " -- " + Date.now())
     }
 
-    function checkModify(file, jsfileName, threshold) {
+    function checkModify(File, threshold) {
         // http://d.hatena.ne.jp/brazil/20110131/1296419283
         var last = Date.now();
         var threshold = threshold || 100;// 差の時間
-        file.observe('modify', function(o) {
+        File.observe('modify', function(o) {
             var now = Date.now();
             if (now - last < threshold) {
-                var result = CoffeeScript.compile(file.load());
-                createJavaScript(jsfileName, result);
+                compileCS(File);
             }
             last = now;
         });
