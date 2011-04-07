@@ -17,7 +17,10 @@ put CoffeeScript-Complier.ng and coffee-script.js into same directory.
 Command line(コマンドライン向け)
 = Complie file
 $ng CoffeeScript-Complier.ng code.coffee
+$ng CoffeeScript-Complier.ng /path/to/code.coffee
 = Complie mutiple files
 $ng CoffeeScript-Complier.ng code.coffee heloo.coffee
+= Complie directory (match /\/$/ ,  depth limit is 3)
+$ng CoffeeScript-Complier.ng path/to/directory/
 = Watch file modify
 $ng CoffeeScript-Complier.ng code.coffee --watch
