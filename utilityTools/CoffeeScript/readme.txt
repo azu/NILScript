@@ -14,12 +14,12 @@ put CS-Compiler.ng and coffee-script.js into same directory.
 
 == usage
 Command line(コマンドライン向け)
-= Complie file
+= Compile file
 $ng CS-Compiler.ng code.coffee
 $ng CS-Compiler.ng /path/to/code.coffee
-= Complie mutiple files
+= Compile mutiple files
 $ng CS-Compiler.ng code.coffee heloo.coffee
-= Complie directory (match /\/$/ ,  depth limit is 3)
+= Compile directory (match /\/$/ ,  depth limit is 3)
 $ng CS-Compiler.ng path/to/directory/
 = Watch file modify
 $ng CS-Compiler.ng code.coffee --watch
