@@ -23,7 +23,7 @@ cs.depth = 0;// ディレクトリの深さ
         for (var i = 0,len = params.length; i < len; i++) {
             var param = params[i];
             switch (true) {
-                case ("--watch" === param):
+                case ("--watch" === param || "-w" === param):
                     cs._optWatch = true;
                     break;
                 case coffeeReg.test(param):
