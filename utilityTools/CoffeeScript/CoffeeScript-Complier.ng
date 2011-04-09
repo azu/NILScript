@@ -12,14 +12,14 @@ var cs = {};
 cs.files = [];//コンパイル対象
 cs.depth = 0;// ディレクトリの深さ
 (function() {
+    var coffeeReg = /\.coffee$/i;
     // 対象coffeeファイルをリストに入れる
     addFile(Main.params);
     // println("対象ファイル" , cs.files.join("\n"))
     handleFile();
     function addFile(params) {
-        var coffeeReg = /\.coffee$/i;
-        println("" + params.toArray);
-        params.toArray && (params = params.toArray());
+
+        params.toArray && (params = params.toArray());// ジェネレーターを配列へ
         for (var i = 0,len = params.length; i < len; i++) {
             var param = params[i];
             switch (true) {
@@ -34,6 +34,7 @@ cs.depth = 0;// ディレクトリの深さ
                     if (cs.depth < 3) {
                         var dir = cwd().directory(param);// Directoryオブジェクト
                         addFile(dir.children);
+                        checkModify(dir);
                     }
                     break;
                 default:
@@ -43,16 +44,17 @@ cs.depth = 0;// ディレクトリの深さ
     }
 
     // 受け取った引数を元に処理
-    function handleFile() {
+    function handleFile(targetFiles) {
         var handleFnStack = [];
+        targetFiles = targetFiles || cs.files;
         handleFnStack.push(compileCS);
         if (cs._optWatch) {
             Main.createNotifyIcon();// 変更を監視するため
             handleFnStack.push(checkModify);
         }
         // それぞれのFileオブジェクトに処理をする
-        for (var i = 0,len = cs.files.length; i < len; i++) {
-            var File = getFile(cs.files[i]);
+        for (var i = 0,len = targetFiles.length; i < len; i++) {
+            var File = getFile(targetFiles[i]);
             handleFnStack.forEach(function(fn) {
                 fn(File);
             })
@@ -70,7 +72,7 @@ cs.depth = 0;// ディレクトリの深さ
         try {
             result = CoffeeScript.compile(File.load())
         } catch(e) {
-            println("F -- " + e);
+            println("E -- " + File.name + " -- " + e);
             return e;
         }
         createJavaScript(jsFile, result);
@@ -86,12 +88,22 @@ cs.depth = 0;// ディレクトリの深さ
         // http://d.hatena.ne.jp/brazil/20110131/1296419283
         var last = Date.now();
         var threshold = threshold || 100;// 差の時間
-        File.observe('modify', function(o) {
-            var now = Date.now();
-            if (now - last < threshold) {
-                compileCS(File);
-            }
-            last = now;
-        });
+        if (File.attributes.directory) {
+            //Direcotryは追加を監視
+            File.observe('add', function(o) {
+                var file = o.file;// 追加されたファイル
+                if (file.exists && coffeeReg.test(file.name)) {
+                    handleFile([file]);
+                }
+            })
+        } else {// fileなら変更監視
+            File.observe('modify', function(o) {
+                var now = Date.now();
+                if (now - last < threshold) {
+                    compileCS(File);
+                }
+                last = now;
+            });
+        }
     }
 })()
