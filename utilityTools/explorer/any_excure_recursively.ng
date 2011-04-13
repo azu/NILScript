@@ -1,0 +1,125 @@
+// ==NILScript==
+// @name any_excure_recursively
+// @namespace http://efcl.info/
+// @description 第一引数のコマンドを第二引数のディレクトリに再帰的に実行
+// @author azu
+// @homepage http://efcl.info/
+// @twitter https://twitter.com/azu_re
+// ==/NILScript==
+
+(function() {
+    initParam();
+    function initParam() {
+        if (Main.params.length > 1) {
+            var params = Main.params;
+            params.toArray && (params = params.toArray());// ジェネレーターを配列へ
+            this.param_command = params[0]; // コマンド
+            this.parama_direcotries = params.slice(1);// ディレクトリ
+            // println(this.param_command, this.parama_direcotries)
+            var Files = dirToFileAry(this.parama_direcotries);
+            recurseExec(this.param_command, Files);
+        } else {
+            lanchGUI(recurseExec);
+        }
+    }
+
+    function recurseExec(fnArg, Files) {
+        var process = fnArg.replace("$$", '"', "g"),
+                res;
+        for (var i = 0,len = Files.length; i < len; i++) {
+            println(process + ' "' + Files[i] + '"')
+            res = Process.create(process + ' "' + Files[i] + '"', {
+                        show : 0
+                    });
+            res.waitForExit();
+        }
+
+    }
+
+    function lanchGUI(fnArg) {
+        with (require('Window')) {
+            var w = Window.create({
+                        title: "対象ファイルをD&D",
+                        top: 250,
+                        left: 250,
+                        width: 350,
+                        height: 350,
+                        hasBorder: false,
+                        acceptFiles: true,
+                        children: {
+                            // 20-60
+                            exexCommandLabel: {
+                                noHideSel: true,
+                                type: Static,
+                                text: "Command",
+                                wantReturn: true,
+                                top: 20,
+                                left: 5
+                            },
+                            exexCommand: {
+                                noHideSel: true,
+                                type: Edit,
+                                text: "",
+                                wantReturn: true,
+                                top: 40,
+                                left: 10,
+                                height: 20,
+                                width: 300
+                            }
+                        },
+                        events: {
+                            dropFiles: function(o) {
+                                var result = [];
+                                for (var i = 0, l = o.files.length; i < l; i++) {
+                                    var arc = o.files[i];
+                                    if (arc.attributes.directory) {
+                                        result.push(dirToFileAry(arc))
+                                    } else {
+                                        result.push(arc)
+                                    }
+                                }
+                                if(!this.exexCommand.text){
+                                    alert("command is not found");
+                                    return;
+                                }
+                                fnArg(this.exexCommand.text, Array.concat.apply(0, result));
+                            }
+                        }
+                    }).show();
+        }
+    }
+
+    function flatten(array) {
+        var flat = [];
+        for (var i = 0, l = array.length; i < l; i++) {
+            var type = Object.prototype.toString.call(array[i]).split(' ').pop().split(']').shift().toLowerCase();
+            if (type) {
+                flat = flat.concat(/^(array|collection|arguments|object)$/.test(type) ? flatten(array[i]) : array[i]);
+            }
+        }
+        return flat;
+    }
+
+    function dirToFileAry(dir) {
+        var dir = cwd().directory(dir),
+                result = [];
+        recurseDir(dir);
+        function recurseDir(dir) {
+            if (!dir.exists) {
+                return println(dir + "はありません");
+            }
+
+            for (var File in dir.children) {
+                // alert(d.name +" "+ d.attributes.directory);
+                if (File.attributes.directory) { // dir.attributes.directoryでフォルダならtrue
+                    recurseDir(File);
+                } else {
+                    result.push(File);
+                }
+            }
+        }
+
+        return result;
+    }
+
+})();
