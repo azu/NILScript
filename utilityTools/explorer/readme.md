@@ -10,7 +10,7 @@
 
 * folder_breaker.ng
 
-    渡したフォルダを分解する]
+    渡したフォルダを分解する
 
 * remove_less_FolderSize.ng
 

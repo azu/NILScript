@@ -29,8 +29,8 @@
         for (var i = 0,len = Files.length; i < len; i++) {
             println(process + ' "' + Files[i] + '"')
             res = Process.create(process + ' "' + Files[i] + '"', {
-                        show : 0
-                    });
+                show : 0
+            });
             res.waitForExit();
         }
 
@@ -39,53 +39,53 @@
     function lanchGUI(fnArg) {
         with (require('Window')) {
             var w = Window.create({
-                        title: "対象ファイルをD&D",
-                        top: 250,
-                        left: 250,
-                        width: 350,
-                        height: 350,
-                        hasBorder: false,
-                        acceptFiles: true,
-                        children: {
-                            // 20-60
-                            exexCommandLabel: {
-                                noHideSel: true,
-                                type: Static,
-                                text: "Command",
-                                wantReturn: true,
-                                top: 20,
-                                left: 5
-                            },
-                            exexCommand: {
-                                noHideSel: true,
-                                type: Edit,
-                                text: "",
-                                wantReturn: true,
-                                top: 40,
-                                left: 10,
-                                height: 20,
-                                width: 300
-                            }
-                        },
-                        events: {
-                            dropFiles: function(o) {
-                                var result = [];
-                                for (var i = 0, l = o.files.length; i < l; i++) {
-                                    var arc = o.files[i];
-                                    if (arc.attributes.directory) {
-                                        result.push(dirToFileAry(arc))
-                                    } else {
-                                        result.push(arc)
-                                    }
-                                }
-                                if(!this.exexCommand.text){
-                                    alert("command is not found");
-                                    return;
-                                }
-                                fnArg(this.exexCommand.text, Array.concat.apply(0, result));
+                title: "対象ファイルをD&D",
+                top: 250,
+                left: 250,
+                width: 350,
+                height: 350,
+                hasBorder: false,
+                acceptFiles: true,
+                children: {
+                    // 20-60
+                    exexCommandLabel: {
+                        noHideSel: true,
+                        type: Static,
+                        text: "Command",
+                        wantReturn: true,
+                        top: 20,
+                        left: 5
+                    },
+                    exexCommand: {
+                        noHideSel: true,
+                        type: Edit,
+                        text: "",
+                        wantReturn: true,
+                        top: 40,
+                        left: 10,
+                        height: 20,
+                        width: 300
+                    }
+                },
+                events: {
+                    dropFiles: function(o) {
+                        var result = [];
+                        for (var i = 0, l = o.files.length; i < l; i++) {
+                            var arc = o.files[i];
+                            if (arc.attributes.directory) {
+                                result.push(dirToFileAry(arc))
+                            } else {
+                                result.push(arc)
                             }
                         }
-                    }).show();
+                        if (!this.exexCommand.text) {
+                            alert("command is not found");
+                            return;
+                        }
+                        fnArg(this.exexCommand.text, Array.concat.apply(0, result));
+                    }
+                }
+            }).show();
         }
     }
 

@@ -144,7 +144,7 @@ model.getGoogleTranslator = function(str, callback) {
         method: "get",
         url: API,
         headers: {
-            'User-agent': 'Mozilla/5.0 (compatible)',
+            'User-agent': 'Mozilla/5.0 (compatible)'
         },
         events: {
             response: function() {
