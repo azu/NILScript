@@ -10,9 +10,9 @@
 include("coffee-script.js");
 var cs = {};
 cs.files = [];//コンパイル対象
-cs.depth = 0;// ディレクトリの深さ
+// cs.depth = 0;// ディレクトリの深さ
+cs.checkedDir = false;
 (function() {
-    var coffeeReg = /\.coffee$/i;
     // 対象coffeeファイルをリストに入れる
     addFile(Main.params);
     // println("対象ファイル" , cs.files.join("\n"))
@@ -22,24 +22,39 @@ cs.depth = 0;// ディレクトリの深さ
         params.toArray && (params = params.toArray());// ジェネレーターを配列へ
         for (var i = 0,len = params.length; i < len; i++) {
             var param = params[i];
-            switch (true) {
-                case ("--watch" === param || "-w" === param):
-                    cs._optWatch = true;
-                    break;
-                case coffeeReg.test(param):
-                    cs.files.push(param);
-                    break;
-                case /\/$/.test(param):
-                    cs.depth++;
-                    if (cs.depth < 3) {
-                        var dir = cwd().directory(param);// Directoryオブジェクト
-                        addFile(dir.children);
-                        checkModify(dir);
-                    }
-                    break;
-                default:
-                    break;
+            var File = getFile(param);
+            if (File) {
+                switch (true) {
+                    // coffeeファイル
+                    case (File.attributes.archive && File.extLC === ".coffee"):
+                        cs.files.push(File);
+                        break;
+                    // ディレクトリなら再帰
+                    case (File.attributes.directory):
+                        addFile(File.children);
+                        cs.checkedDir || checkModify(File);
+                        cs.checkedDir = true;
+                        break;
+                    default:
+                        break;
+                }
+            } else {
+                switch (true) {
+                    case ("--watch" === param || "-w" === param):
+                        cs._optWatch = true;
+                        break;
+                    default:
+                        break;
+                }
             }
+        }
+    }
+
+    // パスからファイルオブジェクトを取得
+    function getFile(path) {
+        var File = cwd().file(path);
+        if (File.exists) {
+            return File;
         }
     }
 
@@ -59,11 +74,6 @@ cs.depth = 0;// ディレクトリの深さ
                 fn(File);
             })
         }
-    }
-
-    // パスからファイルオブジェクトを取得
-    function getFile(path) {
-        return cwd().file(path);
     }
 
     function compileCS(File) {
