@@ -20,10 +20,23 @@ cs.checkedDir = false;
     function addFile(params) {
 
         params.toArray && (params = params.toArray());// ジェネレーターを配列へ
+        // オプション登録
+        for (var i = 0,len = params.length; i < len; i++) {
+            var param = params[i];
+            switch (true) {
+                case ("--watch" === param || "-w" === param):
+                    cs._optWatch = true;
+                    params.splice(i, 1);// マッチしたら取り除く
+                    break;
+                default:
+                    break;
+            }
+        }
         for (var i = 0,len = params.length; i < len; i++) {
             var param = params[i];
             var File = getFile(param);
             if (File) {
+                // ファイル登録
                 switch (true) {
                     // coffeeファイル
                     case (File.attributes.archive && File.extLC === ".coffee"):
@@ -31,21 +44,14 @@ cs.checkedDir = false;
                         break;
                     // ディレクトリなら再帰
                     case (File.attributes.directory):
-                        addFile(File.children);
-                        cs.checkedDir || checkModify(File);
-                        cs.checkedDir = true;
+                        addFile(File.children);// ファイルを登録
+                        cs._optWatch && checkModify(File);// ディレクトリを監視
                         break;
                     default:
                         break;
                 }
             } else {
-                switch (true) {
-                    case ("--watch" === param || "-w" === param):
-                        cs._optWatch = true;
-                        break;
-                    default:
-                        break;
-                }
+
             }
         }
     }
@@ -101,9 +107,10 @@ cs.checkedDir = false;
         if (File.attributes.directory) {
             //Direcotryは追加を監視
             File.observe('add', function(o) {
-                var file = o.file;// 追加されたファイル
-                if (file.exists && coffeeReg.test(file.name)) {
-                    handleFile([file]);
+                var addtionalFile = o.file;// 追加されたファイル
+                if (addtionalFile.exists &&
+                        addtionalFile.attributes.archive && addtionalFile.extLC === ".coffee") {
+                    handleFile([addtionalFile]);// 監視対象へ加える
                 }
             })
         } else {// fileなら変更監視
