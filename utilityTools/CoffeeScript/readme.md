@@ -33,7 +33,7 @@ Command line(コマンドライン向け)
 
 >$ng CS-Compiler.ng code.coffee heloo.coffee
 
-#### Compile directory (match /\/$/ ,  depth limit is 3)
+#### Compile directory (match /.*?\/$/)
 
 >$ng CS-Compiler.ng path/to/directory/
 
