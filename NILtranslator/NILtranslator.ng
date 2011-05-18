@@ -70,10 +70,9 @@ controll.hideWindow = function hideWindow(win) {
 }
 controll.hideWindowDelay = function(win, msec) {
     controll.stopHideTimer();
-    view.popup.timer = new Timer((function() {
+    view.popup.timer = setTimeout(function() {
         controll.hideWindow(win);
-    }), msec, true);
-    view.popup.timer.run();
+    }, msec);
     return controll;
 }
 controll.stopHideTimer = function() {
@@ -94,25 +93,17 @@ controll.showWindow = function(win) {
 }
 /*model*/
 model.clipboard = {
-    // イベントのadd,removeはロックしてからやる
-    locked: false,
     hist: "",//判定用
-    textByUser: "",
-    listner : function(obj) {
-        if (this.hasFormat('text')) {
-            var text = Clipboard.text;
+    backupText: "",
+    listner : function(evt, text) {
+        if (Clipboard.hasFormat('text')) {
+            var text = text || Clipboard.text;
             var hist = model.clipboard.hist;
             //println(hist + " : " + text);
             if (text && (hist !== text)) {
-                model.clipboard.process = true;
                 model.clipboard.hist = text;
                 view.translateText(text.trim());
             }
-            if (!setting.isClipboard) {
-                model.clipboard.removeEvent();
-                Clipboard.text = model.clipboard.textByUser;// ユーザーのクリップボードを戻す
-            }
-            model.clipboard.locked = false;
         }
     },
     addEvent : function() {
@@ -131,12 +122,9 @@ model.clipboard = {
     }
 }
 model.fireClipbodChange = function() {
-    if (!model.clipboard.locked) {
-        model.clipboard.locked = true;
-        model.clipboard.addEvent();
-        model.clipboard.textByUser = Clipboard.text;// ユーザーのクリップボードを保護
-        Hotstrokes.send("Ctrl+C");
-    }
+    var mc = model.clipboard;
+    log(Clipboard.text);
+    mc.listner(Clipboard.text);
 }
 model.getGoogleTranslator = function(str, callback) {
     var API = "http://ajax.googleapis.com/ajax/services/language/translate?v=1.0&langpair=en|ja&q=" + encodeURIComponent(str);
@@ -200,7 +188,9 @@ model.getExcite = function(str, callback) {
 }
 model.getKingsoft = function(word, callback) {
     log(word);
-    var API = (/^http/.test(word)) ? word : "http://dic.kingsoft.jp/" + word + "/%E5%85%A8%E3%81%A6%E3%81%AE%E8%BE%9E%E6%9B%B8";
+    var API = (/^http/.test(word)) ? word : "http://dic.kingsoft.jp/"
+            + word
+            + "/%E5%85%A8%E3%81%A6%E3%81%AE%E8%BE%9E%E6%9B%B8";
     var xhr = http.request({
         method: "get",
         url: API,
@@ -417,8 +407,8 @@ view.settings = {
                         click:function() {
                             var win = view.settings.actionWindow;
                             var obj = {
-                                shortcut : win.shortcut.text,
-                                isClipboard : win.isClipboard.checked,
+                                shortcutkey : win.shortcutkey.text,
+                                translateWhenCopy : win.translateWhenCopy.checked,
                                 translateService :win.translateService.selectedString,
                                 hideDalayTime : win.hideDalayTime.text
                             }
@@ -431,16 +421,16 @@ view.settings = {
                         }
                     }
                 },
-                isClipboard : {
+                translateWhenCopy : {
                     type: CheckBox,
-                    checked : setting.isClipboard,
+                    checked : setting.translateWhenCopy,
                     text: "テキストコピーで翻訳",
                     top: 25,
                     left: 20,
                     height: 20,
                     width:150
                 },
-                shortcutLabel : {
+                shortcutkeyLabel : {
                     noHideSel: true,
                     type: Static,
                     text: "ショートカットキー:",
@@ -450,7 +440,7 @@ view.settings = {
                     height: 24,
                     width:100
                 },
-                shortcut : {
+                shortcutkey : {
                     type: Edit,
                     text: setting.shortcutkey,
                     wantReturn: true,
@@ -629,20 +619,25 @@ setting.load = function() {
 }
 setting.setDefault = function() {
     var action = setting.action || {};
-    setting.shortcutkey = (action.shortcut) ? action.shortcut : 'Shift*2'
-    setting.isClipboard = (action.isClipboard) ? action.isClipboard : false;
+    // ショートカットキー
+    setting.shortcutkey = (action.shortcutkey) ? action.shortcutkey : 'Shift*2'
+    // クリップボードにコピーした時に動作するか
+    setting.translateWhenCopy = (action.translateWhenCopy) ? action.translateWhenCopy : false;
+    // 翻訳サービス
     setting.translateService = (action.translateService) ? action.translateService : "google";
+    // 翻訳パネルが消える時間ms
     setting.hideDalayTime = (action.hideDalayTime) ? action.hideDalayTime : 5000;
-    if (setting.shortcutkey) {
+    if (setting.translateWhenCopy) {
         model.clipboard.addEvent();
     }
     // キーボード
-    setting.mapobj = {};
-    setting.mapobj[setting.shortcutkey] = function() {
+    setting.mapkey = {};
+    setting.mapkey[setting.shortcutkey] = function() {
         model.fireClipbodChange();
     }
     // ショートカット設定
-    Hotstrokes.defineConditions({}).map(setting.mapobj).register();
+    Hotstrokes.use('Mouse', 'IME')
+            .map(setting.mapkey).register();
 }
 // 初期化
 setting.init();
