@@ -1,0 +1,39 @@
+// ==NILScript==
+// @name remove style attr
+// @namespace http://efcl.info/
+// @description クリップボードのHTMLタグからstyle属性を消す for richtext
+// @author azu
+// @homepage http://efcl.info/
+// @twitter https://twitter.com/azu_re
+// ==/NILScript==
+var Clipboard = require('Clipboard').Clipboard;
+(function() {
+    function hasHtml() {
+        return Clipboard.hasFormat("html");
+    }
+
+    function removeStyleAttr(str) {
+        /*
+         /\s
+         style
+         \s*
+         =
+         \s*
+         ( "[^"]*" | '[^']*' )  # 属性値を第 1後方参照にキャプチャ
+         (?: [^>"']             # 残された文字
+         | "[^"]*"              #     ...およびクォートで囲まれた属性値
+         | '[^']*'              #
+         )*                     #
+         */
+        var matchStyleAttr = /\sstyle\s*=\s*("[^"]*"|'[^']*')(?:[^>"']|"[^"]*"|'[^']*')*/ig;
+        var resultStr = str.replace(matchStyleAttr, "");
+        return resultStr;
+    }
+
+    (function main() {
+        // HTML形式かText形式どちらでもstrとして使う
+        var sanitizeHTML = removeStyleAttr(hasHtml() ? Clipboard.html.fragment : Clipboard.text);
+        // println("結果", sanitizeHTML);
+        Clipboard.text = sanitizeHTML;
+    })();
+})();
