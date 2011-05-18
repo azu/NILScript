@@ -1,0 +1,14 @@
+// ==UserScript==
+// @name js_Beautifier
+// @namespace http://efcl.info/
+// @description クリップボードのJavaScriptコードを整形してクリップボードに返す
+// @author azu
+// @homepage http://efcl.info/
+// @twitter https://twitter.com/azu_re
+// ==/UserScript==
+var jsBeautifyPath = "js-beautify\\beautify.js"; 
+include(jsBeautifyPath || "beautify.js");// 空なら同じディレクトリを探す
+
+var Clipboard=require('Clipboard').Clipboard;
+var formated = js_beautify(Clipboard.text, {indent_size: 4 , preserve_newlines :false});
+Clipboard.text = formated;
