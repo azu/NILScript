@@ -695,6 +695,8 @@ view.showResult = function(str) {
         controll.showWindow(win).hideWindowDelay(win, setting.hideDalayTime);
     } else {
         var win = view.popup.getWindow();
+        win.ie.update(model.createViewHTML("該当結果はありませんでした"));
+        sleep(500);
         controll.hideWindow(win);
     }
 }
