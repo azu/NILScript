@@ -202,7 +202,7 @@ model.getKingsoft = function(word, callback) {
                 if (res.status == 200) {
                     var reshtml = new LooseXML(res),
                             parseHTML = reshtml.getElementById("content-left");
-                            parseHTML = reshtml.getElementById("content-left");
+                    parseHTML = reshtml.getElementById("content-left");
                     callback(parseHTML.toString());
                 } else {
                     // log(this.response);
@@ -450,7 +450,7 @@ view.settings = {
                             click:function() {
                                 var win = view.settings.actionWindow;
                                 var dict = win.dictionaryService.selectedString;
-                                if(dict === "英辞郎" && !win.eijiroDatabasePath.text){
+                                if (dict === "英辞郎" && !win.eijiroDatabasePath.text) {
                                     alert("英辞郎を利用する場合はローカルのデータベースファイルを指定してください!");
                                     return;
                                 }
@@ -462,8 +462,7 @@ view.settings = {
                                     hideDalayTime : win.hideDalayTime.text,
                                     eijiroDatabasePath :win.eijiroDatabasePath.text
                                 }
-                                for (var i in
-                                        obj) {
+                                for (var i in obj) {
                                     setting[i] = obj[i];
                                 }
                                 pref("action_settings.json", 1).saveJSON(obj);
@@ -716,7 +715,6 @@ view.translateText = function(str) {
             "Excite" : model.getExcite
         }[setting.translateService];
     }
-    log(translateByService.name);
     translateByService(str, view.showResult);// 文章
 }
 
@@ -735,12 +733,12 @@ view.encodePlus = function(str) {
 var setting = {};
 setting.init = function() {
     setting.load();
-    setting.setDefault();
+    setting.setDafault();
 }
 setting.load = function() {
     setting.action = pref("action_settings.json", 1).loadJSON();
 }
-setting.setDefault = function() {
+setting.setDafault = function() {
     var action = setting.action || {};
     // ショートカットキー
     setting.shortcutkey = (action.shortcutkey) ? action.shortcutkey : 'Shift*2'
