@@ -1,34 +1,37 @@
-
+* {
+    margin: 0;
+    padding: 0;
+}
 
 a {
-/*リンクされた文字*/
+    /*リンクされた文字*/
     color: #00ffff;
     font-style: normal;
     text-decoration: underline;
 }
 
 a:link {
-/*未訪問のリンク*/
+    /*未訪問のリンク*/
     color: #00ccff;
     font-style: normal;
     text-decoration: underline;
 }
 
 a:visited {
-/*訪問後のリンク*/
+    /*訪問後のリンク*/
     color: #934C7B;
     text-decoration: underline;
 }
 
 a:hover {
-/*マウスをのせたとき*/
+    /*マウスをのせたとき*/
     color: #ff0000;
     font-style: normal;
     text-decoration: underline;
 }
 
 a:active {
-/*クリック中*/
+    /*クリック中*/
     text-decoration: none;
 }
 
@@ -45,12 +48,17 @@ body {
     line-height: 1.5;
 }
 
-md {
-    display: block;
-    visibility: hidden;
-    font-size: 1px;
+/* kingsoft */
+h1, h2 {
+    display: none;
 }
 
-kn {
-    display: none;
+li {
+    margin: 0 0 0 10px;
+    padding: 5px 0 5px 10px;
+}
+
+.cixin {
+    list-style: none;
+
 }

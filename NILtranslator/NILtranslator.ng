@@ -189,9 +189,10 @@ model.getExcite = function(str, callback) {
     }).send();
 }
 model.getKingsoft = function(word, callback) {
-    var API = (/^http/.test(word)) ? word : "http://dic.kingsoft.jp/"
+    var API = (/^http/.test(word)) ? word : "http://dic.Kingsoft.jp/"
             + word
-            + "/%E5%85%A8%E3%81%A6%E3%81%AE%E8%BE%9E%E6%9B%B8";
+            + "/全ての辞書";
+
     var xhr = http.request({
         method: "get",
         url: API,
@@ -201,9 +202,11 @@ model.getKingsoft = function(word, callback) {
                 if (res.status == 200) {
                     var reshtml = new LooseXML(res),
                             parseHTML = reshtml.getElementById("content-left");
+                            parseHTML = reshtml.getElementById("content-left");
                     callback(parseHTML.toString());
                 } else {
-                    // callback(res.statusText);
+                    // log(this.response);
+                    callback(res.statusText);
                 }
             }
         }
@@ -429,164 +432,202 @@ view.settings = {
         view.settings.popupWindow.focus();
     },
     createActionWindow : function() {
-        view.settings.actionWindow = Window.create({
-            title : "設定",
-            top:200,left:200,
-            width:400,height:300,
-            children: {
-                save : {
-                    type:Button,
-                    text: "保存",
-                    height:20,
-                    width:45,
-                    bottom:25,
-                    right:25,
-                    events:{
-                        click:function() {
-                            var win = view.settings.actionWindow;
-                            var obj = {
-                                shortcutkey : win.shortcutkey.text,
-                                translateWhenCopy : win.translateWhenCopy.checked,
-                                translateService :win.translateService.selectedString,
-                                hideDalayTime : win.hideDalayTime.text,
-                                eijiroDatabasePath :win.eijiroDatabasePath.text
-                            }
-                            for (var i in
-                                    obj) {
-                                setting[i] = obj[i];
-                            }
-                            pref("action_settings.json", 1).saveJSON(obj);
-                            this.parent.close(true);
-                            view.settings.actionWindow = null;
-                        }
-                    }
-                },
-                translateWhenCopy : {
-                    type: CheckBox,
-                    checked : setting.translateWhenCopy,
-                    text: "テキストコピーで翻訳",
-                    top: 25,
-                    left: 20,
-                    height: 20,
-                    width:150
-                },
-                shortcutkeyLabel : {
-                    noHideSel: true,
-                    type: Static,
-                    text: "ショートカットキー:",
-                    wantReturn: true,
-                    top: 50,
-                    left: 20,
-                    height: 24,
-                    width:100
-                },
-                shortcutkey : {
-                    type: Edit,
-                    text: setting.shortcutkey,
-                    wantReturn: true,
-                    top: 50,
-                    left: 120,
-                    height: 20,
-                    width:100
-                },
-                // action.translateService
-                translateServiceLabel : {
-                    noHideSel: true,
-                    type: Static,
-                    text: "翻訳するサービス:",
-                    wantReturn: true,
-                    top: 80,
-                    left: 20,
-                    height: 24,
-                    width:100
-                },
-                translateService:{
-                    type:ComboBox,
-                    isDropDownList:true,
-                    items:["Google" , "Excite"],
-                    droppedCount:5,
-                    hasVScroll:true,
-                    bottom:0,
-                    top:80,
-                    left:120,
-                    width:128,
-                    height:48
-                },
-                hideDalayTimeLabel : {
-                    noHideSel: true,
-                    type: Static,
-                    text: "ポップアップの\n消失時間(ミリ秒):",
-                    wantReturn: true,
-                    top: 110,
-                    left: 20,
-                    height: 24,
-                    width:100
-                },
-                hideDalayTime : {
-                    type: Edit,
-                    text: setting.hideDalayTime,
-                    wantReturn: true,
-                    top: 110,
-                    left: 120,
-                    height: 20,
-                    width:100
-                },
-                eijiroDatabaseLabel : {
-                    type: Static,
-                    text: "英辞郎のDBファイル:",
-                    top: 140,
-                    left: 20,
-                    height: 20,
-                    width:100
-                },
-                eijiroDatabasePath : {
-                    type: Edit,
-                    text: setting.eijiroDatabasePath,
-                    autoVScroll:true,// はみ出た部分がスクロールできるようになる
-                    autoHScroll:true,
-                    top: 140,
-                    left: 120,
-                    height: 20,
-                    width:200
-                },
-                eijiroDatabaseButton : {
-                    type: Button,
-                    text: "...",
-                    wantReturn: true,
-                    top: 140,
-                    left: 320,
-                    height: 20,
-                    width:20,
-                    events : {
-                        click : function(o) {
-                            var File = require('Dialog').FileDialog.show();
-                            var win = view.settings.actionWindow;
-                            if (File) {
-                                win.eijiroDatabasePath.text = File.path;
-                                setting.eijiroDatabasePath = File.path;
-                            }
-                        }
-                    }
-                },
-                disc : {
-                    noHideSel: true,
-                    type: Static,
-                    text: "ショートカットキーはHotstrokesクラスに従ったキー\n*設定変更はソフトウェアの再起動後に反映",
-                    wantReturn: true,
-                    bottom: 10,
-                    left: 20,
-                    height: 24,
-                    width:250
-                }
-            },
-            events:{
-                create:function(o) {
-                    var def = (setting.translateService) ? setting.translateService : "Google";
-                    this.translateService.selectString(def);
 
+        try {
+            view.settings.actionWindow = Window.create({
+                title : "設定",
+                top:200,left:200,
+                width:400,height:300,
+                children: {
+                    save : {
+                        type:Button,
+                        text: "保存",
+                        height:20,
+                        width:45,
+                        bottom:25,
+                        right:25,
+                        events:{
+                            click:function() {
+                                var win = view.settings.actionWindow;
+                                var dict = win.dictionaryService.selectedString;
+                                if(dict === "英辞郎" && !win.eijiroDatabasePath.text){
+                                    alert("英辞郎を利用する場合はローカルのデータベースファイルを指定してください!");
+                                    return;
+                                }
+                                var obj = {
+                                    shortcutkey : win.shortcutkey.text,
+                                    translateWhenCopy : win.translateWhenCopy.checked,
+                                    dictionaryService :win.dictionaryService.selectedString,
+                                    translateService :win.translateService.selectedString,
+                                    hideDalayTime : win.hideDalayTime.text,
+                                    eijiroDatabasePath :win.eijiroDatabasePath.text
+                                }
+                                for (var i in
+                                        obj) {
+                                    setting[i] = obj[i];
+                                }
+                                pref("action_settings.json", 1).saveJSON(obj);
+                                this.parent.close(true);
+                                view.settings.actionWindow = null;
+                            }
+                        }
+                    },
+                    translateWhenCopy : {
+                        type: CheckBox,
+                        checked : setting.translateWhenCopy,
+                        text: "テキストコピーで翻訳",
+                        top: 25,
+                        left: 20,
+                        height: 20,
+                        width:150
+                    },
+                    shortcutkeyLabel : {
+                        noHideSel: true,
+                        type: Static,
+                        text: "ショートカットキー:",
+                        wantReturn: true,
+                        top: 50,
+                        left: 20,
+                        height: 24,
+                        width:100
+                    },
+                    shortcutkey : {
+                        type: Edit,
+                        text: setting.shortcutkey,
+                        wantReturn: true,
+                        top: 50,
+                        left: 120,
+                        height: 20,
+                        width:100
+                    },
+                    // action.translateService
+                    dictionaryServiceLabel : {
+                        noHideSel: true,
+                        type: Static,
+                        text: "単語辞書サービス:",
+                        wantReturn: true,
+                        top: 80,
+                        left: 20,
+                        height: 24,
+                        width:100
+                    },
+                    dictionaryService:{
+                        type:ComboBox,
+                        isDropDownList:true,
+                        items:["Kingsoft" , "英辞郎"],
+                        droppedCount:5,
+                        hasVScroll:true,
+                        bottom:0,
+                        top:80,
+                        left:120,
+                        width:128,
+                        height:48
+                    },
+                    // action.translateService
+                    translateServiceLabel : {
+                        noHideSel: true,
+                        type: Static,
+                        text: "翻訳するサービス:",
+                        wantReturn: true,
+                        top: 110,
+                        left: 20,
+                        height: 24,
+                        width:100
+                    },
+                    translateService:{
+                        type:ComboBox,
+                        isDropDownList:true,
+                        items:["Google" , "Excite"],
+                        droppedCount:5,
+                        hasVScroll:true,
+                        bottom:0,
+                        top:110,
+                        left:120,
+                        width:128,
+                        height:48
+                    },
+                    hideDalayTimeLabel : {
+                        noHideSel: true,
+                        type: Static,
+                        text: "ポップアップの\n消失時間(ミリ秒):",
+                        wantReturn: true,
+                        top: 140,
+                        left: 20,
+                        height: 24,
+                        width:100
+                    },
+                    hideDalayTime : {
+                        type: Edit,
+                        text: setting.hideDalayTime,
+                        wantReturn: true,
+                        top: 140,
+                        left: 120,
+                        height: 20,
+                        width:100
+                    },
+                    eijiroDatabaseLabel : {
+                        type: Static,
+                        text: "英辞郎のDBファイル:",
+                        top: 170,
+                        left: 20,
+                        height: 20,
+                        width:100
+                    },
+                    eijiroDatabasePath : {
+                        type: Edit,
+                        text: setting.eijiroDatabasePath,
+                        autoVScroll:true,// はみ出た部分がスクロールできるようになる
+                        autoHScroll:true,
+                        top: 170,
+                        left: 120,
+                        height: 20,
+                        width:200
+                    },
+                    eijiroDatabaseButton : {
+                        type: Button,
+                        text: "...",
+                        wantReturn: true,
+                        top: 170,
+                        left: 320,
+                        height: 20,
+                        width:20,
+                        events : {
+                            click : function(o) {
+                                var File = require('Dialog').FileDialog.show();
+                                var win = view.settings.actionWindow;
+                                if (File) {
+                                    win.eijiroDatabasePath.text = File.path;
+                                    setting.eijiroDatabasePath = File.path;
+                                }
+                            }
+                        }
+                    },
+                    disc : {
+                        noHideSel: true,
+                        type: Static,
+                        text: "ショートカットキーはHotstrokesクラスに従ったキー\n*設定変更はソフトウェアの再起動後に反映",
+                        wantReturn: true,
+                        bottom: 10,
+                        left: 20,
+                        height: 24,
+                        width:250
+                    }
+                },
+                events:{
+                    create:function(o) {
+                        var defTranslateService = (setting.translateService)
+                                ? setting.translateService : "Google";
+                        this.translateService.selectString(defTranslateService);
+                        var defDictionaryService = (setting.dictionaryService)
+                                ? setting.dictionaryService : "Kingsoft";
+                        this.dictionaryService.selectString(defDictionaryService);
+
+                    }
                 }
-            }
-        }).show();
+            }).show();
+        } catch(e) {
+            log("設定画面", e);
+        }
         view.settings.actionWindow.focus();
     }
 }
@@ -663,15 +704,20 @@ view.translateText = function(str) {
     // 画面内でのスクロールを初期化する意味を込めて
     win.ie.update(model.createViewHTML("ロード中…"));
     controll.showWindow(win);
+    var translateByService;
     if (view.isWord(str)) {
-        model.getEijiro(str, view.showResult); // 英単語翻訳
+        translateByService = {
+            "Kingsoft" : model.getKingsoft,
+            "英辞郎" : model.getEijiro
+        }[setting.dictionaryService];
     } else {
-        var translateByService = {
+        translateByService = {
             "Google" : model.getGoogleTranslator,
             "Excite" : model.getExcite
         }[setting.translateService];
-        translateByService(str, view.showResult);// 文章
     }
+    log(translateByService.name);
+    translateByService(str, view.showResult);// 文章
 }
 
 /**
@@ -700,12 +746,19 @@ setting.setDefault = function() {
     setting.shortcutkey = (action.shortcutkey) ? action.shortcutkey : 'Shift*2'
     // クリップボードにコピーした時に動作するか
     setting.translateWhenCopy = (action.translateWhenCopy) ? action.translateWhenCopy : false;
+    // 辞書サービス
+    setting.dictionaryService = (action.dictionaryService) ? action.dictionaryService : "Kingsoft";
     // 翻訳サービス
     setting.translateService = (action.translateService) ? action.translateService : "google";
     // 翻訳パネルが消える時間ms
     setting.hideDalayTime = (action.hideDalayTime) ? action.hideDalayTime : 5000;
     // 英辞郎のDBがあるかどうか
     setting.eijiroDatabasePath = (action.eijiroDatabasePath) ? action.eijiroDatabasePath : "";
+
+    if (!setting.eijiroDatabasePath) {
+        // 英辞郎ないなら
+        setting.dictionaryService = "Kingsoft";
+    }
     if (setting.translateWhenCopy) {
         model.clipboard.addEvent();
     }

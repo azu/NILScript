@@ -49,6 +49,9 @@ var alc = {};
         // log("OpenDB")
         var FileData = new File(path);
         db = require('SQLite').DB.open(FileData);
+        if(!db){
+            alert("英辞郎データベースを開くのに失敗しました");
+        }
     }
 
     function isOpened() {
