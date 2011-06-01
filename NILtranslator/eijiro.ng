@@ -1,0 +1,280 @@
+// ==NILScript==
+// @name eijiro
+// @namespace http://efcl.info/
+// @description eijiroユニット
+// @author azu
+// @homepage http://efcl.info/
+// @twitter https://twitter.com/azu_re
+// ==/NILScript==
+// ==NILScript==
+// @name sqlite_test
+// @namespace http://efcl.info/
+// @description SQLiteの実験
+// @author azu
+// @homepage http://efcl.info/
+// @twitter https://twitter.com/azu_re
+// ==/NILScript==
+var segmenter = require('Segmenter').Segmenter.create("ja");
+var alc = {};
+(function() {
+    var db = null;// Database
+    alc = {
+        openDB : openDB,
+        isOpened: isOpened,
+        closeDB:closeDB,
+        searchWord:searchWord,
+        searchEntry:searchEntry,
+        searchFull:searchFull,
+        suggest:suggest,
+        convertRuby: convertRuby
+    }
+    /*
+     * make semantic HTML of translation part
+     */
+    var re_kanji = '(?:[々〇〻\u3400-\u9FFF\uF900-\uFAFF]|[\uD840-\uD87F][\uDC00-\uDFFF])+'; // http://tama-san.com/?p=196
+    var re_trivial = /【(?:レベル|発音！?|＠|大学入試|分節|変化|読み方)】/;
+    var re_henka = /【変化】[^【]+/;
+    var re_bunsetsu = /【分節】[^【]+/;
+    var re_hatsuon = /(【発音！?】)([^【]+)/;
+    var re_hatsuon_sep = / *(、|《.*?》)+ */;
+    var re_redirect = /<→(.*?)>/;
+    var re_file = /◆file:\S+$/;
+    var re_synonym = /(【(?:[反対名類動同略]|参考|語源|標準英語)】)([-a-zA-Z'.? ;]+)/g;
+    var re_semicolon = / *; */;
+    var re_url = /【URL】([^ ]+(?: ; (?:[^ ]+))*)/g;
+    var re_bracket = /([【〈])(.*?)([】〉])/g;
+
+    // Database
+    function openDB(path) {
+        // log("OpenDB")
+        var FileData = new File(path);
+        db = require('SQLite').DB.open(FileData);
+    }
+
+    function isOpened() {
+        //log("isOpened");
+        if (db) {
+            return true;
+        }
+    }
+
+    function closeDB() {
+        db && db.free();
+        db = null;
+    }
+
+    function dbexecute(q, params, callback, failback) {
+        var isPassed = false;
+        try {
+            var res = db.query(q, params).toArray();
+            callback && callback(res);
+        } catch(err) {
+            failback && failback(err);
+            log("dbexecute: " + err);
+        }
+    }
+
+    // wordとマッチするもの
+    function searchWord(opt, callback) {
+        var query = opt.query;
+        var limit = opt.limit || default_limit || 20;
+        var q = (query + '').replace(/[\x00-\x1f\x7f-\xa0]/g, '').toLowerCase();
+        var t = Date.now();
+        dbexecute(
+                'SELECT raw FROM eijiro ' +
+                        'WHERE entry = ? ' +
+                        'LIMIT ?;',
+                [q,limit],
+                function sqlSuccess(res) {
+                    //log('took ' + (Date.now() - t) + ' ms');
+                    callback(res);
+                },
+                function sqlError(tx, err) {
+                    if (callback) {
+                        callback(rv);
+                    }
+                    log(err);
+                }
+        );
+    }
+
+    // query
+    function searchEntry(opt, callback) {
+        var query = opt.query;
+        var page = opt.page;
+        // log([query, page].toString());
+        var rv = {query:query, page:page, more:false, full:false, results:[]};
+        var limit = opt.limit || default_limit || 20;
+        var offset = (page - 1) * limit || 1;
+        var q = (query + '').replace(/[\x00-\x1f\x7f-\xa0]/g, '').toLowerCase();
+        var t = Date.now();
+        var isPassed = false;
+        dbexecute(
+                'SELECT raw FROM eijiro ' +
+                        'WHERE entry >= ? AND entry < ? ' +
+                        'LIMIT ? OFFSET ?;',
+                [q, nextWord(q), limit, offset],
+                function sqlSuccess(res) {
+                    // log('took ' + (Date.now() - t) + ' ms');
+                    // TODO : なぜかcallbackが重複して呼ばれる -> SQL ERROR
+                    if (!isPassed) {
+                        isPassed = true;
+                        callback && callback(res);
+                    }
+                },
+                function sqlError(tx, err) {
+                    if (callback) {
+                        callback(rv);
+                    }
+                    log(err);
+                }
+        );
+    }
+
+    // common_tokens.js
+    include("common_tokens.js");
+    // segment is defined in tiny_segmenter_mod.js
+    function tokenize(str) {
+        tokenize.re_sep || (tokenize.re_sep = /[^一-龠々〆ヵヶぁ-んァ-ヴーｱ-ﾝﾞｰa-zA-Zａ-ｚＡ-Ｚ0-9０-９]+/g);
+        var tokens = [];
+        var segments = uniqAry(segmenter.segment(str).map(function(s) {
+            return s.replace(tokenize.re_sep, '')
+        }));
+        for (var i = 0, l = segments.length;
+                i < l;
+                i++) {
+            var seg = segments[i];
+            if (seg.length) {
+                tokens.push(seg);
+            }
+        }
+        return tokens;
+    }
+
+    // full entry search
+    function searchFull(opt, callback) {
+        var query = opt.query;
+        var page = opt.page || 1;
+        var limit = opt.limit || default_limit;
+        var offset = (page - 1) * limit || 1;
+        var rv = {query:query, page:page, more:false, full:true, results:[]};
+        var tokens = tokenize(query.toLowerCase());
+        var qtokens = '|' + tokens.join('|') + '|';
+        var re_line = /■(.*?)(?:  ?{.*?})? : (.*)/;
+        tokens = tokens
+                .filter(function(c) {
+            return !((c.length === 1 && !re_kanji.test(c)) || common_tokens[c] > 10000)
+        })// opposite of "don't-index-condition"
+                .sort(function(a, b) {
+                    return (common_tokens[a] || 0) - (common_tokens[b] || 0)
+                }); // sort by the least common order
+        if (!tokens.length) {
+            callback(rv);
+        }
+        // log([query, page, tokens[0], common_tokens[tokens[0]] || 0].toString());
+
+        var t = Date.now();
+        dbexecute(
+                'SELECT entry, raw FROM eijiro JOIN invindex USING(id) ' +
+                        'WHERE token = ? AND coalesce(entry, raw) LIKE ? ESCAPE ? LIMIT ? OFFSET ?;',
+                [tokens[0], '%' + likeEscape(query) + '%', '@', limit, offset],
+                function sqlSuccess(res) {
+                    // log('took ' + (Date.now() - t) + ' ms');
+                    callback(res);
+                },
+                function sqlError(err) {
+                    if (callback) {
+                        callback(rv);
+                    }
+                    log(err);
+                }
+        );
+    }
+
+    function suggest(query, callback) {
+        log('*' + query);
+        var rv = [query, []];
+        var q = (query + '').replace(/[\x00-\x1f\x7f-\xa0]/g, '').toLowerCase();
+        var re_line = /■(.*?)(?:  ?{.*?})? : (.*)/;
+        var re_ruby = /｛.*?｝/g;
+        var t = Date.now();
+        dbexecute(
+                'SELECT raw FROM eijiro ' +
+                        'WHERE entry >= ? AND entry < ? ' +
+                        'LIMIT 10; ',
+                [q, nextWord(q)],
+                function sqlSuccess(res) {
+                    log('took ' + (Date.now() - t) + ' ms');
+                    if (callback) {
+                        callback(res);
+                    }
+                },
+                function sqlError(err) {
+                    if (callback) {
+                        callback(rv);
+                    }
+                    log(err);
+                }
+        );
+    }
+
+    /*
+     * put <ruby> tags
+     */
+    var re_ruby = /(.*?)｛(.*?)｝/g;
+    var re_okuri = /(.*?)([ぁ-ん]+)$/;
+    var re_additional = /(（.*?）)/;
+
+    function convertRuby(html) {
+        return html.replace(re_ruby, function($0, head, ruby) {
+            var m, okuri = '', kanji;
+            if (m = head.match(re_okuri)) {
+                // 心得る｛こころえる｝ -> <ruby>心得<rp>｛</rp><rt>こころえ</rt><rp>｝</rp></ruby>る
+                okuri = m[2]; // === 'る'
+                var l = ruby.length - okuri.length; // === 'こころえ'.length === 4
+                if (ruby.lastIndexOf(okuri) === l) {
+                    head = m[1]; // '心得'
+                    ruby = ruby.slice(0, l); // 'こころえる'.slice(0, 4)
+                } else {
+                    // maybe this case does not exist
+                    return head + '<span class="ruby">｛' + ruby + '｝</span>';
+                }
+            }
+            // "density" => 密集（度）｛みっしゅう（ど）｝
+            var re = RegExp('(.*?)(' +
+                    ruby.split(re_additional).map(
+                            function(m) {
+                                return !m.length ? '' : (m.charAt(0) === '（' ? '（' + re_kanji + '）' : re_kanji);
+                            }).join('') + ')$'
+            );
+            if (m = head.match(re)) {
+                head = m[1];
+                kanji = m[2];
+                return head + '<ruby>' + kanji + '<rp>｛</rp><rt>' + ruby + '</rt><rp>｝</rp></ruby>' + okuri;
+            } else {
+                // maybe this case does not exist
+                console.log(text);
+                return head + kanji + '<span class="ruby">｛' + ruby + '｝</span>' + okuri;
+            }
+        })
+    }
+
+    /* utils */
+    function likeEscape(text) {
+        return (text + '').replace(/@/g, '@@').replace(/%/g, '@%').replace(/_/g, '@_');
+    }
+
+    function nextWord(str) {// str is a non-empty string
+        return str.substr(0, str.length - 1) + String.fromCharCode(str.charCodeAt(str.length - 1) + 1);
+    }
+
+    function uniqAry(ary) {
+        return ary.reduce(function(memo, el, i) {
+            if (0 == i || memo.indexOf(el) === -1) { // ソートされてないときはincludeで含んでいるかを調べる
+                // memoにまだ無い要素だったらpushする
+                memo[memo.length] = el;
+            }
+            return memo;
+        }, []);// memoの初期値
+    }
+})();

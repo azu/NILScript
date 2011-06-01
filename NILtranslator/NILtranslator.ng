@@ -30,6 +30,8 @@ var Display = require('Window').Display;
 var http = new require("HTTP").HTTP();
 var LooseXML = require('LooseXML').HTML;
 use('Window', 'ATL', 'HTTPD');
+// 英辞郎関係の処理ライブラリ
+include("eijiro.ng");
 // MVC的に作りたい
 /*
  http://www.diffshare.com/blog/archives/1625
@@ -187,7 +189,6 @@ model.getExcite = function(str, callback) {
     }).send();
 }
 model.getKingsoft = function(word, callback) {
-    log(word);
     var API = (/^http/.test(word)) ? word : "http://dic.kingsoft.jp/"
             + word
             + "/%E5%85%A8%E3%81%A6%E3%81%AE%E8%BE%9E%E6%9B%B8";
@@ -230,6 +231,43 @@ model.getALC = function (word, callback) {
             }
         }
     }).send();
+}
+model.getEijiro = function(word, callback) {
+    try {
+        // データベースが使えるように準備
+        if (!alc.isOpened()) {
+            alc.openDB(setting.eijiroDatabasePath);
+        }
+        alc.searchEntry({
+                    query: word,
+                    limit : 10,
+                    page : 1
+                }, function(res) {
+                    var result = [];
+                    for (var i = 0,len = res.length; i < len; i++) {
+                        result.push(alc.convertRuby(htmlEscape(res[i])))
+                    }
+                    var html = result.join("<br>");
+                    callback(html);
+                }
+        );
+    } catch(e) {
+        log(e)
+    } finally {
+        alc.closeDB();
+    }
+    /*
+     * usual HTML escape
+     */
+    var htmlEscapePattern = {'>':'&gt;', '<':'&lt;', '&':'&amp;', '"':'&quot;', "'":'&apos;'};
+    // omit the apostrophe because I have to deal with apostrophes by regexp
+    var re_htmlunsafe = /[&"><]/g;
+
+    function htmlEscape(text) {
+        return (text + '').replace(re_htmlunsafe, function(m) {
+            return htmlEscapePattern[m];
+        });
+    }
 }
 // cssファイルを読み込む
 model.popupStyle = Main.scriptDirectory.file("panel-style.css").load();
@@ -410,9 +448,11 @@ view.settings = {
                                 shortcutkey : win.shortcutkey.text,
                                 translateWhenCopy : win.translateWhenCopy.checked,
                                 translateService :win.translateService.selectedString,
-                                hideDalayTime : win.hideDalayTime.text
+                                hideDalayTime : win.hideDalayTime.text,
+                                eijiroDatabasePath :win.eijiroDatabasePath.text
                             }
-                            for (var i in obj) {
+                            for (var i in
+                                    obj) {
                                 setting[i] = obj[i];
                             }
                             pref("action_settings.json", 1).saveJSON(obj);
@@ -491,6 +531,43 @@ view.settings = {
                     height: 20,
                     width:100
                 },
+                eijiroDatabaseLabel : {
+                    type: Static,
+                    text: "英辞郎のDBファイル:",
+                    top: 140,
+                    left: 20,
+                    height: 20,
+                    width:100
+                },
+                eijiroDatabasePath : {
+                    type: Edit,
+                    text: setting.eijiroDatabasePath,
+                    autoVScroll:true,// はみ出た部分がスクロールできるようになる
+                    autoHScroll:true,
+                    top: 140,
+                    left: 120,
+                    height: 20,
+                    width:200
+                },
+                eijiroDatabaseButton : {
+                    type: Button,
+                    text: "...",
+                    wantReturn: true,
+                    top: 140,
+                    left: 320,
+                    height: 20,
+                    width:20,
+                    events : {
+                        click : function(o) {
+                            var File = require('Dialog').FileDialog.show();
+                            var win = view.settings.actionWindow;
+                            if (File) {
+                                win.eijiroDatabasePath.text = File.path;
+                                setting.eijiroDatabasePath = File.path;
+                            }
+                        }
+                    }
+                },
                 disc : {
                     noHideSel: true,
                     type: Static,
@@ -559,22 +636,22 @@ view.popup = {
 }
 //view.popup.launch_server();
 view.showResult = function(str) {
-    //println("view.showResult : " + str)
     if (str) {
         var win = view.popup.getWindow();
         var body = model.createViewHTML(str);
         win.ie.update(body);
         // ポップアップ内でのリンク移動にフック
-        if (!win.ie.object.isObserved('BeforeNavigate2')) {
-            win.ie.object.observe('BeforeNavigate2', function(o) {
-                o.Cancel = true;
-                if (/^http:\/\/eow\.alc\.co\.jp/.test(o.URL)) {
-                    model.getALC(o.URL, view.showResult);
-                } else {
-                    win.ie.invoke('navigate', o.URL);
-                }
-            });
-        }
+        /*
+         if (!win.ie.object.isObserved('BeforeNavigate2')) {
+         win.ie.object.observe('BeforeNavigate2', function(o) {
+         o.Cancel = true;
+         if (/^http:\/\/eow\.alc\.co\.jp/.test(o.URL)) {
+         model.getALC(o.URL, view.showResult);
+         } else {
+         win.ie.invoke('navigate', o.URL);
+         }
+         });
+         }*/
         controll.showWindow(win).hideWindowDelay(win, setting.hideDalayTime);
     } else {
         var win = view.popup.getWindow();
@@ -587,7 +664,7 @@ view.translateText = function(str) {
     win.ie.update(model.createViewHTML("ロード中…"));
     controll.showWindow(win);
     if (view.isWord(str)) {
-        model.getALC(str, view.showResult); // 英単語翻訳
+        model.getEijiro(str, view.showResult); // 英単語翻訳
     } else {
         var translateByService = {
             "Google" : model.getGoogleTranslator,
@@ -627,6 +704,8 @@ setting.setDefault = function() {
     setting.translateService = (action.translateService) ? action.translateService : "google";
     // 翻訳パネルが消える時間ms
     setting.hideDalayTime = (action.hideDalayTime) ? action.hideDalayTime : 5000;
+    // 英辞郎のDBがあるかどうか
+    setting.eijiroDatabasePath = (action.eijiroDatabasePath) ? action.eijiroDatabasePath : "";
     if (setting.translateWhenCopy) {
         model.clipboard.addEvent();
     }
