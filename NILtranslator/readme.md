@@ -22,7 +22,7 @@ http://www.eijiro.jp/
 ローカルの英辞郎辞書を使うためには、英辞郎辞書をデータベース形式に変換する必要があります。
 
 辞書の変換形式は[EijiroX]と全く同じものを使用しています。
-そのため[EijiroX]の変換方法をよく読み、databaseというファイル名のデータベースファイルを生成してください。
+そのため[EijiroXの利用方法]をよく読み、databaseというファイル名のデータベースファイルを生成してください。
 
 データベースファイルはできれば database → database.db(eijiro.dbなど)の拡張子として.dbにリネームした方がよいです(内部処理的に)
 
@@ -43,4 +43,5 @@ Copyright © 2011 azu
 [KingSoft辞書]:http://www.kingsoft.jp/dictionary/
 [Google翻訳]:http://translate.google.co.jp/
 [Excite翻訳]:http://www.excite.co.jp/world/
-[EijiroX]:http://d.hatena.ne.jp/edvakf/20101122/1290423802
+[EijiroX]:https://github.com/edvakf/EijiroX
+[EijiroXの利用方法]:http://d.hatena.ne.jp/edvakf/20101122/1290423802

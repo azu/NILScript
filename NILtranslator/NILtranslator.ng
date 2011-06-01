@@ -16,6 +16,7 @@ Main.addCommands({
         controll.changeActionSetting();
     }
 });
+// TODO : 一時無効ボタンをつける
 Main.addTexts({
     reset:'パネル設定(&P)',
     actionSetting:'動作設定(&A)'
