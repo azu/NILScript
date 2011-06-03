@@ -1,0 +1,103 @@
+// ==NILScript==
+// @name HatenaKeywordToIME
+// @namespace http://efcl.info/
+// @description はてなキーワードふりがなリストからIME辞書を割く作成
+// @author azu
+// @homepage http://efcl.info/
+// @twitter https://twitter.com/azu_re
+// ==/NILScript==
+
+var http = new require("HTTP").HTTP();// クラスのインスタンスを作成
+var HATENA_KEYWORD_URL = "http://d.hatena.ne.jp/images/keyword/keywordlist_furigana.csv";
+var savePath = Main.scriptDirectory + '\\ime.txt';
+/*// 非同期じゃない
+ try {
+ var xhr = http.request({
+ method :"get",
+ url : HATENA_KEYWORD_URL,
+ events : {
+ connect: function() {
+ println("がる");// コマンドプロンプトだと繫とか?になる文字があるので覚えておく
+ },
+
+ response:function() {
+ var res = this.response;
+ if (res.status == 200) {
+ var file = (new File(savePath))
+ if (res.readText()) {
+ println(res.encoding);
+ file.update(res.readAll(), res.encoding);
+ }
+ }
+ }
+ }
+ }).send();
+ } catch(e) {
+ println(e);
+ }*/
+var HATENA_DICT = cwd().file("keywordlist_furigana.csv");
+var SAVE_PATH = cwd().file("coverted_hatena.txt");
+(function(opts) {
+    var header = <>!Microsoft IME Dictionary Tool
+    !Version:
+    !Format:WORDLIST
+    !User Dictionary Name: http://d.hatena.ne.jp/images/keyword/keywordlist_furigana.csv
+    !Output File Name:
+    !DateTime:
+    </>.toString();
+    var createTasks = function(opts) {
+        var format = outputformat("MS");
+        SAVE_PATH.update(header);
+        return function(yomi, moji) {
+            if (isDuplication(moji)) {
+                return;
+            }
+            return format(yomi, moji);
+        }
+        /*        var tasks = [];
+         if(opts.duplicate){
+         tasks.push(isDuplication);
+         }
+         var format = outputformat("MS");
+         tasks.push(format);
+         return function(line){
+         for (var i = 0,len = tasks.length; i < len; i++) {
+         var task = tasks[i];
+         task(line);
+         }
+         }*/
+    }
+    var outputformat = function(type) {
+        if (type === "MS") {
+            return function(yomi, moji) {
+                //println(yomi +" + "+  moji)
+                if (yomi && moji) {
+                    return yomi + "\t" + moji + "\t固有名詞";
+                }
+            }
+        }
+    }
+    var preMoji = "";
+    var isDuplication = function(moji) {
+        if (preMoji === moji) {
+            return true;
+        }
+        preMoji = moji;
+    }
+    var lineConvert = function(line, job) {
+        var ary = line.split("\t"),
+                yomi = ary[0], moji = ary[1];
+        return job(yomi, moji);
+    }
+    var convertText = function() {
+        var job = createTasks(opts);
+        var results = [];
+        var l;
+        for each (var line in HATENA_DICT.lines) {
+            l = lineConvert(line, job);
+            l && results.push(l);
+        }
+        SAVE_PATH.append(results.join("\n"));
+    }
+    convertText();
+})();

@@ -1,64 +1,56 @@
+@charset "UTF-8";
+/* すべて */
 * {
-    margin: 0;
-    padding: 0;
-}
+  margin: 0;
+  padding: 0; }
 
 a {
-    /*リンクされた文字*/
-    color: #00ffff;
-    font-style: normal;
-    text-decoration: underline;
-}
+  /*リンクされた文字*/
+  color: #00ffff;
+  font-style: normal;
+  text-decoration: underline; }
 
 a:link {
-    /*未訪問のリンク*/
-    color: #00ccff;
-    font-style: normal;
-    text-decoration: underline;
-}
+  /*未訪問のリンク*/
+  color: #00ccff;
+  font-style: normal;
+  text-decoration: underline; }
 
 a:visited {
-    /*訪問後のリンク*/
-    color: #934C7B;
-    text-decoration: underline;
-}
+  /*訪問後のリンク*/
+  color: #934C7B;
+  text-decoration: underline; }
 
 a:hover {
-    /*マウスをのせたとき*/
-    color: #ff0000;
-    font-style: normal;
-    text-decoration: underline;
-}
+  /*マウスをのせたとき*/
+  color: #ff0000;
+  font-style: normal;
+  text-decoration: underline; }
 
 a:active {
-    /*クリック中*/
-    text-decoration: none;
-}
+  /*クリック中*/
+  text-decoration: none; }
 
 body {
-    line-heigt: 1.25em;
-    background-color: #111111;
-    color: #FFFFFF;
-    margin: 25px;
-    padding: 5px;
-    min-height: 22px;
-}
+  line-heigt: 1.25em;
+  background-color: #111111;
+  color: #FFFFFF;
+  margin: 25px;
+  padding: 25px;
+  min-height: 22px; }
 
-#main {
-    line-height: 1.5;
-}
+div.main {
+  line-height: 1.5; }
 
 /* kingsoft */
-h1, h2 {
-    display: none;
-}
+#kingsoft h1, #kingsoft h2 {
+  display: none; }
+#kingsoft li {
+  margin: 0 0 0 10px;
+  padding: 5px 0 5px 10px; }
+#kingsoft .cixin {
+  list-style: none; }
 
-li {
-    margin: 0 0 0 10px;
-    padding: 5px 0 5px 10px;
-}
-
-.cixin {
-    list-style: none;
-
-}
+/* 英辞郎 */
+/* Excite */
+/* Google翻訳*/

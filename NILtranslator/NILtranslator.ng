@@ -100,7 +100,7 @@ model.clipboard = {
     backupText: "",
     listner : function(evt, text) {
         if (Clipboard.hasFormat('text')) {
-            var text = text || Clipboard.text;
+            var text = Clipboard.text;
             var hist = model.clipboard.hist;
             //println(hist + " : " + text);
             if (text && (hist !== text)) {
@@ -129,7 +129,7 @@ model.fireClipbodChange = function() {
     log(Clipboard.text);
     mc.listner(Clipboard.text);
 }
-model.getGoogleTranslator = function(str, callback) {
+model.getGoogleTranslator = function googleTranslator(str, callback) {
     var API = "http://ajax.googleapis.com/ajax/services/language/translate?v=1.0&langpair=en|ja&q=" + encodeURIComponent(str);
     var xhr = http.request({
         method: "get",
@@ -157,7 +157,7 @@ model.getGoogleTranslator = function(str, callback) {
  * @param str
  * @param callback
  */
-model.getExcite = function(str, callback) {
+model.getExcite = function excite(str, callback) {
     var API = "http://www.excite.co.jp/world/english/"
     var searchRegexp = model.getExcite.regexp || (model.getExcite.regexp = /id="after".*?>([^<]*?)<\/textarea>/im);
     var xhr = http.request({
@@ -189,7 +189,7 @@ model.getExcite = function(str, callback) {
         }
     }).send();
 }
-model.getKingsoft = function(word, callback) {
+model.getKingsoft = function kingsoft(word, callback) {
     var API = (/^http/.test(word)) ? word : "http://dic.Kingsoft.jp/"
             + word
             + "/全ての辞書";
@@ -218,7 +218,7 @@ model.getKingsoft = function(word, callback) {
  * @param word
  * @param callback
  */
-model.getALC = function (word, callback) {
+model.getALC = function ALC(word, callback) {
     var API = (/^http/.test(word)) ? word : "http://eow.alc.co.jp/eow/sp/" + view.encodePlus(word) + "/UTF-8/";
     var xhr = http.request({
         method: "get",
@@ -236,7 +236,7 @@ model.getALC = function (word, callback) {
         }
     }).send();
 }
-model.getEijiro = function(word, callback) {
+model.getEijiro = function eijiro(word, callback) {
     try {
         // データベースが使えるように準備
         if (!alc.isOpened()) {
@@ -275,25 +275,42 @@ model.getEijiro = function(word, callback) {
 }
 // cssファイルを読み込む
 model.popupStyle = Main.scriptDirectory.file("panel-style.css").load();
-model.createViewHTML = function(text) {
+model.createViewHTML = function(text, servicename) {
     var style = model.popupStyle;
-    var HTML = '<html>'
-            + '<head>'
-            + '<style type="text/css">'
-            + style
-            + '</style>'
-            + '<script type="text/javascript">'
-            + 'document.createElement("kn");document.createElement("md");//IE Hack'
-            + '</script>'
-            + '</head>'
-            + '<body>'
-            + '<div id="main">'
-            + text
-            + '</body>'
-            + '</html>';
-    return HTML;
+    var script = "";
+    var siteID = servicename || "default";
+    var e4x = <html>
+        <head>
+            <style type="text/css">
+            %style%
+            </style>
+            <script type="text/javascript">
+            %script%
+            </script>
+        </head>
+        <body>
+            <div id="%siteID%" calss="main">
+            %text%
+            </div>
+        </body>
+    </html>.toString()
+            .replace("%style%", style)
+            .replace("%script%". script)
+            .replace("%siteID%", siteID)
+            .replace("%text%", text);
+    return e4x;
 }
-
+function xmlToDom(xml, xmlns) {
+    var doc = (new DOMParser).parseFromString(
+            '<root xmlns="' + xmlns + '">' + xml.toXMLString() + "</root>",
+            "application/xml");
+    var imported = document.importNode(doc.documentElement, true);
+    var range = document.createRange();
+    range.selectNodeContents(imported);
+    var fragment = range.extractContents();
+    range.detach();
+    return fragment.childNodes.length > 1 ? fragment : fragment.firstChild;
+}
 /*view*/
 view.settings = {
     actionWindow:null,
@@ -679,7 +696,7 @@ view.popup = {
 view.showResult = function(str) {
     if (str) {
         var win = view.popup.getWindow();
-        var body = model.createViewHTML(str);
+        var body = model.createViewHTML(str, view.translateByService.name);
         win.ie.update(body);
         // ポップアップ内でのリンク移動にフック
         /*
@@ -701,24 +718,24 @@ view.showResult = function(str) {
         controll.hideWindow(win);
     }
 }
+view.translateByService = "";// ポップアップする際に使用してるサービス
 view.translateText = function(str) {
     var win = view.popup.getWindow();
     // 画面内でのスクロールを初期化する意味を込めて
-    win.ie.update(model.createViewHTML("ロード中…"));
+     win.ie.update(model.createViewHTML("ロード中…"));
     controll.showWindow(win);
-    var translateByService;
     if (view.isWord(str)) {
-        translateByService = {
+        view.translateByService = {
             "Kingsoft" : model.getKingsoft,
             "英辞郎" : model.getEijiro
         }[setting.dictionaryService];
     } else {
-        translateByService = {
+        view.translateByService = {
             "Google" : model.getGoogleTranslator,
             "Excite" : model.getExcite
         }[setting.translateService];
     }
-    translateByService(str, view.showResult);// 文章
+    view.translateByService(str, view.showResult);// 文章
 }
 
 /**
