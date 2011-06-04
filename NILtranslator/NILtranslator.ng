@@ -14,14 +14,29 @@ Main.addCommands({
     },
     actionSetting:function() {
         controll.changeActionSetting();
+    },
+    state:function() {
+        var state = this.texts.state;
+        if (state == "無効") {// 動作中なら無効にチェックを入れる
+            model.state = false;
+            Main.addTexts({
+                state:'✓無効'
+            });
+        } else {// 無効中なら有効に切り替える
+            model.state = true;
+            Main.addTexts({
+                state:'無効'
+            });
+        }
     }
 });
-// TODO : 一時無効ボタンをつける
+
 Main.addTexts({
     reset:'パネル設定(&P)',
-    actionSetting:'動作設定(&A)'
+    actionSetting:'動作設定(&A)',
+    state:'無効'
 });
-Main.notifyIcon.contextMenu = ['actionSetting','reset',null,'exit'];
+Main.notifyIcon.contextMenu = ['actionSetting','reset',null,"state",null,'exit'];
 //安定性向上のため推奨
 Main.process.priority = Process.priority.high;
 var Clipboard = require('Clipboard').Clipboard;
@@ -95,11 +110,13 @@ controll.showWindow = function(win) {
     return controll;
 }
 /*model*/
+model.state = true;// デフォルトで動作中
 model.clipboard = {
     hist: "",//判定用
     backupText: "",
     listner : function(evt, text) {
-        if (Clipboard.hasFormat('text')) {
+        // 動作中で、クリップボードの中身がtextなら
+        if (model.state && Clipboard.hasFormat('text')) {
             var text = Clipboard.text;
             var hist = model.clipboard.hist;
             //println(hist + " : " + text);
@@ -300,7 +317,7 @@ model.createViewHTML = function(text, servicename) {
         </body>
     </html>.toString()
             .replace("%style%", style)
-            .replace("%script%",script)
+            .replace("%script%", script)
             .replace("%siteID%", siteID)
             .replace("%text%", text);
     return e4x;
@@ -478,7 +495,7 @@ view.settings = {
                                     return;
                                 }
                                 var obj = {
-                                    shortcutkey : win.shortcutkey.text,
+                                    shortcutkey : win.shortcutkey.text.trim(),
                                     translateWhenCopy : win.translateWhenCopy.checked,
                                     dictionaryService :win.dictionaryService.selectedString,
                                     translateService :win.translateService.selectedString,
@@ -516,11 +533,12 @@ view.settings = {
                     shortcutkey : {
                         type: Edit,
                         text: setting.shortcutkey,
-                        wantReturn: true,
+                        autoVScroll:true,// はみ出た部分がスクロールできるようになる
+                        autoHScroll:true,
                         top: 50,
                         left: 120,
                         height: 20,
-                        width:100
+                        width:200
                     },
                     // action.translateService
                     dictionaryServiceLabel : {
@@ -787,13 +805,24 @@ setting.setDafault = function() {
         model.clipboard.addEvent();
     }
     // キーボード
-    setting.mapkey = {};
-    setting.mapkey[setting.shortcutkey] = function() {
-        model.fireClipbodChange();
+    if (typeof setting.shortcutkey !== "object") {
+        setting.mapkey = {};
+        setting.mapkey[setting.shortcutkey] = function() {
+            log(setting.shortcutkey);
+            Thread.create(function() {
+                model.fireClipbodChange();
+            })
+        }
+    } else { // 設定ファイルを書き換えて、オブジェクトでも指定可能にする
+        setting.mapkey = setting.shortcutkey;
     }
     // ショートカット設定
-    Hotstrokes.use('Mouse', 'IME')
-            .map(setting.mapkey).register();
+    try {
+        Hotstrokes.use('Mouse', 'IME')
+                .map(setting.mapkey).register();
+    } catch(e) {
+        alert(e);
+    }
 }
 // 初期化
 setting.init();

@@ -50,6 +50,19 @@ Sassファイルも同梱されている
         </body>
     </html>
 
+%siteID%はそれぞれ、実行時にサービスにあったものに置換されるため、以下のようにCSSでサービス別に記述する子が可能です。
+    /* kingsoft */
+    #kingsoft {
+    }
+    /* 英辞郎 */
+    #eijiro{
+    }
+    /* Excite */
+    #Excite{
+    }
+    /* Google翻訳*/
+    #googleTranslator{
+    }
 
 
 ## License
