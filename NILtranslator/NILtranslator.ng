@@ -126,8 +126,13 @@ model.clipboard = {
 }
 model.fireClipbodChange = function() {
     var mc = model.clipboard;
-    log(Clipboard.text);
-    mc.listner(Clipboard.text);
+    var bkClipboard = Clipboard.text;
+    Hotstrokes.send("Ctrl+C");
+    sleep(100); // コピー動作を待つ
+    mc.listner();// 翻訳処理
+    if (bkClipboard) {// クリップボードを戻す
+        Clipboard.text = bkClipboard;
+    }
 }
 model.getGoogleTranslator = function googleTranslator(str, callback) {
     var API = "http://ajax.googleapis.com/ajax/services/language/translate?v=1.0&langpair=en|ja&q=" + encodeURIComponent(str);
@@ -295,7 +300,7 @@ model.createViewHTML = function(text, servicename) {
         </body>
     </html>.toString()
             .replace("%style%", style)
-            .replace("%script%". script)
+            .replace("%script%",script)
             .replace("%siteID%", siteID)
             .replace("%text%", text);
     return e4x;
@@ -492,7 +497,7 @@ view.settings = {
                     translateWhenCopy : {
                         type: CheckBox,
                         checked : setting.translateWhenCopy,
-                        text: "テキストコピーで翻訳",
+                        text: "*テキストコピーで翻訳",
                         top: 25,
                         left: 20,
                         height: 20,
@@ -501,7 +506,7 @@ view.settings = {
                     shortcutkeyLabel : {
                         noHideSel: true,
                         type: Static,
-                        text: "ショートカットキー:",
+                        text: "*ショートカットキー:",
                         wantReturn: true,
                         top: 50,
                         left: 20,
@@ -622,7 +627,8 @@ view.settings = {
                     disc : {
                         noHideSel: true,
                         type: Static,
-                        text: "ショートカットキーはHotstrokesクラスに従ったキー\n*設定変更はソフトウェアの再起動後に反映",
+                        text: "ショートカットキーはHotstrokesクラスに従ったキー\n"
+                                + "*は設定変更はソフトウェアの再起動後に反映",
                         wantReturn: true,
                         bottom: 10,
                         left: 20,
@@ -722,7 +728,7 @@ view.translateByService = "";// ポップアップする際に使用してるサ
 view.translateText = function(str) {
     var win = view.popup.getWindow();
     // 画面内でのスクロールを初期化する意味を込めて
-     win.ie.update(model.createViewHTML("ロード中…"));
+    win.ie.update(model.createViewHTML("ロード中…"));
     controll.showWindow(win);
     if (view.isWord(str)) {
         view.translateByService = {
