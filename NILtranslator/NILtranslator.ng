@@ -808,7 +808,6 @@ setting.setDafault = function() {
     if (typeof setting.shortcutkey !== "object") {
         setting.mapkey = {};
         setting.mapkey[setting.shortcutkey] = function() {
-            log(setting.shortcutkey);
             Thread.create(function() {
                 model.fireClipbodChange();
             })
