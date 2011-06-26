@@ -18,6 +18,7 @@ var segmenter = require('Segmenter').Segmenter.create("ja");
 var alc = {};
 (function() {
     var db = null;// Database
+    var default_limit = 20;
     alc = {
         openDB : openDB,
         isOpened: isOpened,

@@ -820,7 +820,8 @@ setting.setDafault = function() {
         Hotstrokes.use('Mouse', 'IME')
                 .map(setting.mapkey).register();
     } catch(e) {
-        alert(e);
+        alert(e+"\n" +
+                "ショートカットキーの指定が不正です");
     }
 }
 // 初期化

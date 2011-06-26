@@ -25,23 +25,23 @@ var capture = {};
     capture.callback = callback;
     capture.img = Image.capture(null);// まずは画面スクリーンショットを取る
     capture.win = Window.create({
-                graphics:capture.img,
-                isPopupWindow:true,hasTickFrame:false,hasBorder:false,hasDlgFrame:false,
-                toolWindow:true,
-                topmost:true,
-                left:0,top:0,
-                width:Display.width,height:Display.height
-            }).show()
+        graphics:capture.img,
+        isPopupWindow:true,hasTickFrame:false,hasBorder:false,hasDlgFrame:false,
+        toolWindow:true,
+        topmost:true,
+        left:0,top:0,
+        width:Display.width,height:Display.height
+    }).show()
     capture.resionWin = Window.create({
-                title:'選択範囲',
-                isPopupWindow:true,hasTickFrame:false,hasBorder:false,hasDlgFrame:false,
-                toolWindow:true,
-                topmost:true,
-                transparentColor:0x000000,
-                alpha:196,
-                width:0,height:0,
-                left:0,top:0
-            });
+        title:'選択範囲',
+        isPopupWindow:true,hasTickFrame:false,hasBorder:false,hasDlgFrame:false,
+        toolWindow:true,
+        topmost:true,
+        transparentColor:0x000000,
+        alpha:196,
+        width:0,height:0,
+        left:0,top:0
+    });
     // 右クリックで終了
     Mouse.observe("rbuttonUp", function() {
         // リソースの解放してから終了しないとエラーになる。
@@ -88,9 +88,9 @@ var capture = {};
                     return;
                 }
                 var res = getResionRect(capture.selection.start, {
-                            x : moveevt.x,
-                            y : moveevt.y
-                        });
+                    x : moveevt.x,
+                    y : moveevt.y
+                });
                 var cloneImg = capture.img.clone();
                 cloneImg.drawRect(res.x, res.y, res.width, res.height, "red", false);
                 cloneImg.drawTo(capture.win);
