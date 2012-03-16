@@ -1,0 +1,55 @@
+// ==NILScript==
+// @name directoryAsAPI
+// @namespace http://efcl.info/
+// @description Local Directory API
+// @author azu
+// @homepage http://efcl.info/
+// @twitter https://twitter.com/azu_re
+// ==/NILScript==
+
+use('HTTPD');
+Main.createNotifyIcon();
+var paramDir = Main.params[0];
+// connection.protectなり、キーとなるクエリで判定などした方が安全です
+var httpd = require('HTTPD').HTTPD.create(let(count = 0)({
+    port:8067,
+    contentTypes:{
+        "json":"application/json"
+    },
+
+    paths:{
+        '':cwd().directory(paramDir),
+        //このパス以下に関数を割り当て
+        '/files.json':function (connection) {
+            var files = res.getFiles(paramDir);
+            connection.write(JSON.stringify(files));
+        }
+    }
+}));
+var res = {};
+res.dirToFileAry = function (dir) {
+    var result = [];
+    var aDir = cwd().directory(dir)
+    if (!aDir.exists) {
+        return println(aDir + "はありません");
+    }
+    for (var File in aDir.children) {
+        if (File.attributes.archive) {
+            var fileName = File.name;
+            // id-name.ext な形式
+            var id = fileName.substring(0, fileName.indexOf("-"));
+            result.push({
+                id:id ? id : "",
+                name:fileName,
+                path:"http://localhost:" + httpd.port + "/" + fileName
+            });
+        }
+    }
+    return result;
+}
+
+res.getFiles = function (dir) {
+    return res.dirToFileAry(dir);
+}
+
+
